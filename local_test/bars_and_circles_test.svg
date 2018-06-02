@@ -1,0 +1,20 @@
+<svg id="bars_and_circles" xmlns="http://www.w3.org/2000/svg" width="1248" height="160" viewBox="0 0 1200 300">
+  <style>
+    svg { fill: white; }
+    circle { fill: hsla(170, 100%, 70%, 0.3); stroke-width: 1; stroke: hsla(170, 100%, 30%, 0.8);}
+    rect { stroke-width: 1; fill: hsla(60, 80%, 80%, 0.8); stroke: hsla(60, 80%, 30%, 0.8); }
+  </style>
+  
+  <rect id="bar1" x="20" y="50" width="450" height="20"></rect>
+  <circle id="ev1" cx="100" cy="60" r="20"></circle>
+  <circle id="ev2" cx="180" cy="60" r="20"></circle>
+  <circle id="ev3" cx="190" cy="60" r="20"></circle>
+  
+  
+  <rect id="bar2" x="20" y="130" width="450" height="60"></rect>
+  <circle id="ev4" cx="100" cy="160" r="20"></circle>
+  <circle id="ev5" cx="180" cy="160" r="20" aria-labelledby="ev5_desc"></circle>
+  <circle id="ev6" cx="190" cy="160" r="20"></circle>
+  
+  <desc id="ev5_desc">イベント5の詳細説明だよ。</desc>
+</svg>
