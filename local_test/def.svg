@@ -1,0 +1,9 @@
+<svg id="def" xmlns="http://www.w3.org/2000/svg" >
+  <defs>
+        <linearGradient id="gr_def_ext">
+            <stop offset="0%"  stop-color="hsla(260, 80%, 80%, 0.1)"/>
+            <stop offset="15%"  stop-color="hsla(260, 80%, 80%, 0.8)"/>
+            <stop offset="100%" stop-color="hsla(260, 80%, 80%, 0.8)"/>
+        </linearGradient>
+  </defs>
+</svg>
