@@ -4,6 +4,7 @@
 const SVG_NS = 'http://www.w3.org/2000/svg';
 /* ページの言語。日本語がデフォルト。英語 (en) のページも後で作る。 */
 let LANG = 'ja';
+
 /*  */
 const PERIOD_SELECTORS = new Array(), EVENT_SELECTORS = new Array();
 
@@ -45,6 +46,7 @@ var TIMELINE_DATA = TIMELINE_DATA || {
   }
 };
 
+/* 各種定数 */
 const CONFIG = {
   // 年の許容範囲
   min_allowable_year: -9999,
@@ -59,14 +61,10 @@ const CONFIG = {
   vertical_bar_interval_in_year: 25,
   // 期間を表す横棒 (実際は矩形) の高さ
   bar_height: 20,
-  // その半分
-  //bar_height_half: 10,
   // 期間の配置先たる各行の高さ
   row_height: 64,
   // フォントサイズ (一律)。
   font_size: 16,
-  // 
-  txt_dy: 16,
   // 年を等幅フォントで表示するが、その文字幅の概算値としてフォントサイズの
   // 半分を使う。
   monospace_char_width: 8,
@@ -107,32 +105,47 @@ window.top.onload = function () {
   return(true);
 }
 
-/*  */
+/* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
+  const svg_elt = document.getElementById('timeline'),
+        attr = [['width', 0], ['height', 0], ['viewBox', '0 0 0 0']];
+  attr.forEach(k_v => { svg_elt.setAttribute(k_v[0], k_v[1]); });
+
   document.getElementById('theme_style_def').innerHTML = '';
   document.getElementById('gradient_def').innerHTML = '';
   document.getElementById('header_and_v_bars').innerHTML = '';
   document.getElementById('timeline_body').innerHTML = '';
+
   set_theme_defs();
 }
 
-/*  */
+/* themes.js に定義されている配色テーマの定義を読み取り、svg 要素内にその定義を
+反映させ、配色テーマ用のセレクタに選択肢を追加する。 */
 function set_theme_defs() {
   if (! check_theme_ids()) {
     alert('Error in themes.js.\nPlease correct themes.js.');
     return(false);
   }
-  const style_elt = document.getElementById('theme_style_def'),
-/*
-    // このようにして CSSStyleSheet オブジェクトを取得したいが Safari は未対応
-    style_sheet = style_elt.sheet,
-*/
-    defs_elt = document.getElementById('gradient_def'), 
-    sel_elt = document.menu.color_theme;
-  //console.log('style_elt: ' + style_elt);
-  //console.log('style_sheet: ' + style_sheet);
 
+  const style_elt = document.getElementById('theme_style_def');
+  // なお、本来は、style_elt.sheet という CSSStyleSheet オブジェクトを用いて、
+  // このオブジェクトに対して insertRule メソッドを使って CSS 規則を追加したいが、
+  // Safari だとこの CSSStyleSheet オブジェクトが取得できない。
+  // そこで、<style> 要素の innerHTML に対する文字列操作により CSS 規則を追加する
+  // ことにした。
+
+  const defs_elt = document.getElementById('gradient_def');
+
+  // 期間を表す矩形の本体の比較的不透明な部分用の色指定用の属性群と、左右両端を
+  // フェードアウトさせる場合の最も透明度の高い端の部分用の色指定用の属性群の
+  // ための変数。関数 add_grad を呼ぶ前に設定する。
   let opaque_attr, fading_attr;
+
+  // フェードアウトしない場合は、opaque_attr に設定された属性を端まで使う。
+  // フェードアウトさせる場合は、端に stop 要素を定義して、そこに fading_attr の
+  // 属性を設定するとともに、端から 15% のところにも stop 要素を定義して、そこに
+  // opaque_attr の属性を設定する。「15%」という値はとりあえず決め打ちの定数。
+  // 以上の方針による linearGradient 要素を作成・追加する。
   function add_grad(left_open, right_open, id) {
     const grad = document.createElementNS(SVG_NS, 'linearGradient');
     let grad_id = id;
@@ -183,20 +196,12 @@ function set_theme_defs() {
   }
 
   COLOR_THEMES.forEach(th => {
-/*
-    style_sheet.insertRule('circle.' + th.id + 
-      '{ fill: ' + th.circle_fill + '; stroke: ' + th.circle_stroke + '; } \n');
-    style_sheet.insertRule('text.' + th.id + 
-      '{ fill: ' + th.text_fill + '; } \n');
-
-    console.log('th=' + th + '(id=' + th.id + ')');
-    console.log('# of rules: ' + style_sheet.cssRules.length);
-*/
+    // 出来事を表す円のための CSS 規則を追加
     const circle_rule = 'circle.' + th.id + 
        ' { fill: ' + th.circle_fill + '; stroke: ' + th.circle_stroke + '; }\n',
       text_rule = 'text.' + th.id + ' { fill: ' + th.text_fill + '; }\n';
     style_elt.innerHTML += ('\n' + circle_rule + text_rule);
-
+    // 期間を表す矩形のための 4 種類の linearGradient 要素を追加
     opaque_attr = [['stop-opacity', th.bar_body_opacity], 
                    ['stop-color', th.bar_color]];
     fading_attr = [['stop-opacity', th.bar_fading_end_opacity], 
@@ -205,24 +210,19 @@ function set_theme_defs() {
     add_grad(true, false, th.id);
     add_grad(false, true, th.id);
     add_grad(false, false, th.id);
-
-    add_selector_option(sel_elt, th.id, th.name[LANG]);
+    // 「期間を追加」メニューの「配色」セレクタに選択肢を追加
+    add_selector_option(document.menu.color_theme, th.id, th.name[LANG]);
   });
 }
 
-/*  */
+/* 配色テーマの定義に使われる ID についての簡易チェック。 */
 function check_theme_ids() {
   // ID に重複がないことを確認
-  const ids = COLOR_THEMES.map(th => { return(th.id); }).sort(),
-    L = ids.length;
-  for (let i = 0; i < L-1; i++) {
-    if (ids[i] === ids[i+1]) { return(false); }
-  }
+  const ids = COLOR_THEMES.map(th => { return(th.id); }).sort(), L = ids.length;
+  for (let i = 0; i < L-1; i++) { if (ids[i] === ids[i+1]) { return(false); } }
   // ID の形式を確認
   const re = /^[a-zA-Z_]\w*$/;
-  for (let i = 0; i < L; i++) {
-    if (! re.test(ids[i]))  { return(false); }
-  }
+  for (let i = 0; i < L; i++) { if (! re.test(ids[i]))  { return(false); } }
   // ここに来るのは問題がない場合のみ
   return(true);
 }
@@ -307,10 +307,7 @@ function add_period() {
 
   const row_start_y = CONFIG.header_row_height + 
                         (which_row - 1) * CONFIG.row_height;
-/*
-    color_theme_class_name = 'theme_' + color_theme + '_'
-                               + COLOR_THEMES[color_theme].id;
-*/
+
   const rect = document.createElementNS(SVG_NS, 'rect'),
     rect_x = (CONFIG.h_margin_in_year + (start_year - TIMELINE_DATA.min_year))
                * CONFIG.year_to_px_factor,
@@ -333,7 +330,7 @@ function add_period() {
         ['class', 'year ' + color_theme],
         ['x', rect_x],
         ['y', row_start_y + CONFIG.v_margin_within_row],
-        ['dx', 0], ['dy', CONFIG.txt_dy]];
+        ['dx', 0], ['dy', CONFIG.font_size]];
     start_attr.forEach(k_v => { start_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(start_txt, start_year);
     g.appendChild(start_txt);  add_text_node(g, '\n');
@@ -346,7 +343,7 @@ function add_period() {
         ['class', 'year ' + color_theme],
         ['x', end_txt_x],
         ['y', row_start_y + CONFIG.v_margin_within_row],
-        ['dx', 0], ['dy', CONFIG.txt_dy]];
+        ['dx', 0], ['dy', CONFIG.font_size]];
     end_attr.forEach(k_v => { end_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(end_txt, end_year);
     g.appendChild(end_txt);  add_text_node(g, '\n');
@@ -357,7 +354,7 @@ function add_period() {
       ['x', rect_x],
       ['y', row_start_y + CONFIG.v_margin_within_row + 
             CONFIG.font_size + CONFIG.bar_height],
-      ['dx', 0], ['dy', CONFIG.txt_dy]];
+      ['dx', 0], ['dy', CONFIG.font_size]];
   label_attr.forEach(k_v => { label_txt.setAttribute(k_v[0], k_v[1]); });
   add_text_node(label_txt, period_label);
   g.appendChild(label_txt);  add_text_node(g, '\n');
@@ -367,14 +364,6 @@ function add_period() {
   const p_dat = new period_data(start_year, end_year, which_row, color_theme);
   TIMELINE_DATA.periods.set(new_pid, p_dat);
 }
-
-/*
-function heighten_svg() {
-}
-
-function widen_svg() {
-}
-*/
 
 function update_v_bars() {
   const min_y_incl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year + 1,
@@ -418,7 +407,7 @@ function update_v_bars() {
 
       const v_txt = document.createElementNS(SVG_NS, 'text'),
         txt_attr = [['id', 'v_bar_txt_' + year], ['class', 'year v_bar'],
-          ['x', x - txt_span/2], ['y', 0], ['dx', 0], ['dy', CONFIG.txt_dy]];
+          ['x', x - txt_span/2], ['y', 0], ['dx', 0], ['dy', CONFIG.font_size]];
       add_text_node(v_txt, year);
       txt_attr.forEach(k_v => { v_txt.setAttribute(k_v[0], k_v[1]); });
       header_elt.appendChild(v_txt);
@@ -454,8 +443,8 @@ function put_max_year_backwards(new_end_year) {
 
 /* 「ダウンロードする」メニュー。 */
 function download_svg() {
-  const s = document.getElementById('timeline_container').innerHTML;
-  const b = new Blob([s], {type :'image/svg+xml'});
+  const s = document.getElementById('timeline_container').innerHTML,
+        b = new Blob([s], {type :'image/svg+xml'});
   // ダウンロード用リンクを作る。
   const a = document.createElement('a');
   document.getElementsByTagName('body')[0].appendChild(a);
@@ -469,7 +458,7 @@ function download_svg() {
 function read_in() {
   const reader = new FileReader();
   reader.onload = function (e) {
-    // 読み込んだテキストの内容を、divタグ (IDは 'timeline_container') の中身
+    // 読み込んだテキストの内容を、div 要素 (IDは 'timeline_container') の中身
     // として書き出す。
     document.getElementById('timeline_container').innerHTML = e.target.result;
     // **** TO DO **** SVGの各要素を読み取って、変数の設定を行う。
