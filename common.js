@@ -29,9 +29,7 @@ function selected_radio_choice(radio_elt) {
 }
 
 
-/*** プルダウンリスト (セレクタ) の操作。
-なお、★印の関数では、選択肢の表示名が「[ID] 何らかの文字列」という形式である、と
-仮定している。 ***/
+/*** プルダウンリスト (セレクタ) の操作。 ***/
 
 /* プルダウンリストで選択されている項目の value を返す。 */
 function selected_choice(sel_elt) {
@@ -46,10 +44,10 @@ function select_specified_option(sel_elt, val) {
   }
 }
 
-/* ★プルダウンリストに選択肢を追加して、それを選択済み状態にする。 */
+/* プルダウンリストに選択肢を追加して、それを選択済み状態にする。 */
 function add_selector_option(sel_elt, id, displayed_name) {
   const opt = document.createElement('option');
-  add_text_node(opt, '[' + id + '] ' + displayed_name);  opt.value = id;
+  add_text_node(opt, displayed_name);  opt.value = id;  opt.id = id;
   sel_elt.appendChild(opt);  sel_elt.selectedIndex = sel_elt.options.length - 1;
 }
 
@@ -66,13 +64,13 @@ function remove_choice(sel_elt, id) {
   sel_elt.selectedIndex = Math.min(i, sel_elt.options.length - 1);
 }
 
-/* ★プルダウンリストの選択肢の表示名を変更する。 */
+/* プルダウンリストの選択肢の表示名を変更する。 */
 function rename_choice(sel_elt, id, new_str) {
   for (let i = 0; i < sel_elt.options.length; i++) {
     if (sel_elt.options[i].value === id) {
       const opt = sel_elt.options[i];
       opt.removeChild(opt.firstChild); // テキストノードを削除
-      add_text_node(opt, '[' + id + '] ' + new_str);
+      add_text_node(opt, + new_str);
       return;
     }
   }
