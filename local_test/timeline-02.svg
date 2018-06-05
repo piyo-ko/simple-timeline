@@ -1,0 +1,88 @@
+
+<svg id="timeline" xmlns="http://www.w3.org/2000/svg" width="6860" height="360" viewBox="0 0 6860 360">
+<style> @import url(timeline_svg.css); </style>
+<style id="theme_style_def">
+circle.yellow_blue { fill: hsla(170, 100%, 70%, 0.3); stroke: hsla(170, 100%, 30%, 0.8); }
+text.yellow_blue { fill: hsl(60, 50%, 20%); }
+
+circle.pink_blue { fill: hsla(170, 100%, 70%, 0.3); stroke: hsla(170, 100%, 30%, 0.8); }
+text.pink_blue { fill: hsl(310, 70%, 30%); }
+</style>
+<defs id="gradient_def">
+<linearGradient id="yellow_blue_open_open">
+<stop stop-opacity="0.2" stop-color="hsl(60, 80%, 80%)" offset="0%"></stop>
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="15%"></stop>
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="85%"></stop>
+<stop stop-opacity="0.2" stop-color="hsl(60, 80%, 80%)" offset="100%"></stop>
+</linearGradient>
+
+<linearGradient id="yellow_blue_open_closed">
+<stop stop-opacity="0.2" stop-color="hsl(60, 80%, 80%)" offset="0%"></stop>
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="15%"></stop>
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="100%"></stop>
+</linearGradient>
+
+<linearGradient id="yellow_blue_closed_open">
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="0%"></stop>
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="85%"></stop>
+<stop stop-opacity="0.2" stop-color="hsl(60, 80%, 80%)" offset="100%"></stop>
+</linearGradient>
+
+<linearGradient id="yellow_blue_closed_closed">
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="0%"></stop>
+<stop stop-opacity="0.9" stop-color="hsl(60, 80%, 80%)" offset="100%"></stop>
+</linearGradient>
+
+<linearGradient id="pink_blue_open_open">
+<stop stop-opacity="0.1" stop-color="hsl(310, 90%, 75%)" offset="0%"></stop>
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="15%"></stop>
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="85%"></stop>
+<stop stop-opacity="0.1" stop-color="hsl(310, 90%, 75%)" offset="100%"></stop>
+</linearGradient>
+
+<linearGradient id="pink_blue_open_closed">
+<stop stop-opacity="0.1" stop-color="hsl(310, 90%, 75%)" offset="0%"></stop>
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="15%"></stop>
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="100%"></stop>
+</linearGradient>
+
+<linearGradient id="pink_blue_closed_open">
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="0%"></stop>
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="85%"></stop>
+<stop stop-opacity="0.1" stop-color="hsl(310, 90%, 75%)" offset="100%"></stop>
+</linearGradient>
+
+<linearGradient id="pink_blue_closed_closed">
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="0%"></stop>
+<stop stop-opacity="0.8" stop-color="hsl(310, 90%, 75%)" offset="100%"></stop>
+</linearGradient>
+</defs>
+<g id="header_and_v_bars"><line id="h_rule" class="header" x1="0" y1="40" x2="6860" y2="40"></line>
+<line id="v_bar_100" class="v_bar" x1="-360" y1="20" x2="-360" y2="360"></line><text id="v_bar_txt_100" class="year v_bar" x="-372" y="0" dx="0" dy="16">100</text><line id="v_bar_125" class="v_bar" x1="140" y1="20" x2="140" y2="360"></line><text id="v_bar_txt_125" class="year v_bar" x="128" y="0" dx="0" dy="16">125</text><line id="v_bar_150" class="v_bar" x1="640" y1="20" x2="640" y2="360"></line><text id="v_bar_txt_150" class="year v_bar" x="628" y="0" dx="0" dy="16">150</text><line id="v_bar_175" class="v_bar" x1="1140" y1="20" x2="1140" y2="360"></line><text id="v_bar_txt_175" class="year v_bar" x="1128" y="0" dx="0" dy="16">175</text><line id="v_bar_200" class="v_bar" x1="1640" y1="20" x2="1640" y2="360"></line><text id="v_bar_txt_200" class="year v_bar" x="1628" y="0" dx="0" dy="16">200</text><line id="v_bar_225" class="v_bar" x1="2140" y1="20" x2="2140" y2="360"></line><text id="v_bar_txt_225" class="year v_bar" x="2128" y="0" dx="0" dy="16">225</text><line id="v_bar_250" class="v_bar" x1="2640" y1="20" x2="2640" y2="360"></line><text id="v_bar_txt_250" class="year v_bar" x="2628" y="0" dx="0" dy="16">250</text><line id="v_bar_275" class="v_bar" x1="3140" y1="20" x2="3140" y2="360"></line><text id="v_bar_txt_275" class="year v_bar" x="3128" y="0" dx="0" dy="16">275</text><line id="v_bar_300" class="v_bar" x1="3640" y1="20" x2="3640" y2="360"></line><text id="v_bar_txt_300" class="year v_bar" x="3628" y="0" dx="0" dy="16">300</text><line id="v_bar_325" class="v_bar" x1="4140" y1="20" x2="4140" y2="360"></line><text id="v_bar_txt_325" class="year v_bar" x="4128" y="0" dx="0" dy="16">325</text><line id="v_bar_350" class="v_bar" x1="4640" y1="20" x2="4640" y2="360"></line><text id="v_bar_txt_350" class="year v_bar" x="4628" y="0" dx="0" dy="16">350</text><line id="v_bar_375" class="v_bar" x1="5140" y1="20" x2="5140" y2="360"></line><text id="v_bar_txt_375" class="year v_bar" x="5128" y="0" dx="0" dy="16">375</text><line id="v_bar_400" class="v_bar" x1="5640" y1="20" x2="5640" y2="360"></line><text id="v_bar_txt_400" class="year v_bar" x="5628" y="0" dx="0" dy="16">400</text><line id="v_bar_425" class="v_bar" x1="6140" y1="20" x2="6140" y2="360"></line><text id="v_bar_txt_425" class="year v_bar" x="6128" y="0" dx="0" dy="16">425</text><line id="v_bar_450" class="v_bar" x1="6640" y1="20" x2="6640" y2="360"></line><text id="v_bar_txt_450" class="year v_bar" x="6628" y="0" dx="0" dy="16">450</text></g>
+<g id="timeline_body"><g id="p_0g"><rect id="p_0" x="100" y="62" width="6660" height="20" fill="url(#yellow_blue_closed_closed)"></rect>
+<text id="p_0_start_year" class="year yellow_blue" x="100" y="46" dx="0" dy="16">123</text>
+<text id="p_0_end_year" class="year yellow_blue" x="6736" y="46" dx="0" dy="16">456</text>
+<text id="p_0_label" class="label yellow_blue" x="100" y="82" dx="0" dy="16">huwa</text>
+</g>
+<g id="p_1g"><rect id="p_1" x="2760" y="126" width="1780" height="20" fill="url(#pink_blue_closed_open)"></rect>
+<text id="p_1_start_year" class="year pink_blue" x="2760" y="110" dx="0" dy="16">256</text>
+<text id="p_1_end_year" class="year pink_blue" x="4516" y="110" dx="0" dy="16">345</text>
+<text id="p_1_label" class="label pink_blue" x="2760" y="146" dx="0" dy="16">howa</text>
+</g>
+<g id="p_2g"><rect id="p_2" x="1580" y="126" width="680" height="20" fill="url(#yellow_blue_open_closed)"></rect>
+<text id="p_2_start_year" class="year yellow_blue" x="1580" y="110" dx="0" dy="16">197</text>
+<text id="p_2_end_year" class="year yellow_blue" x="2236" y="110" dx="0" dy="16">231</text>
+<text id="p_2_label" class="label yellow_blue" x="1580" y="146" dx="0" dy="16">hhh www</text>
+</g>
+<g id="p_3g"><rect id="p_3" x="2080" y="190" width="5120" height="20" fill="url(#pink_blue_open_open)"></rect>
+<text id="p_3_start_year" class="year pink_blue" x="2080" y="174" dx="0" dy="16">222</text>
+<text id="p_3_end_year" class="year pink_blue" x="7176" y="174" dx="0" dy="16">478</text>
+<text id="p_3_label" class="label pink_blue" x="2080" y="210" dx="0" dy="16">trans lucent!</text>
+</g>
+<g id="p_4g"><rect id="p_4" x="2080" y="254" width="4440" height="20" fill="url(#pink_blue_open_open)"></rect>
+<text id="p_4_start_year" class="year pink_blue" x="2080" y="238" dx="0" dy="16">222</text>
+<text id="p_4_end_year" class="year pink_blue" x="6496" y="238" dx="0" dy="16">444</text>
+<text id="p_4_label" class="label pink_blue" x="2080" y="274" dx="0" dy="16">test</text>
+</g>
+</g>
+</svg>
