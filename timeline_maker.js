@@ -449,7 +449,7 @@ function download_svg() {
   const a = document.createElement('a');
   document.getElementsByTagName('body')[0].appendChild(a);
   a.download = 'timeline.svg';
-  // Blob 要素へのリンク URL を生成し、それを a タグの href 要素に設定する。
+  // Blob へのリンク URL を生成し、それを a 要素の href 属性に設定する。
   a.href = URL.createObjectURL(b);
   a.click();
 }
