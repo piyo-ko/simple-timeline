@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="timeline_maker.css" type="text/css">
+<script type="text/javascript" src="common.js"></script>
+<script type="text/javascript" src="themes.js"></script>
+<script type="text/javascript" src="timeline_maker.js"></script>
+<base target="_top">
+<title>SVG 形式で年表づくり</title>
+</head>
+<body>
+
+<h1>SVG 形式で年表づくり</h1>
+
+<div id="timeline_container" class="container">
+<svg id="timeline" xmlns="http://www.w3.org/2000/svg" width="0" height="0" viewBox="0 0 0 0">
+<style><![CDATA[ @import url(timeline_svg.css); ]]></style>
+<style id="theme_style_def"></style>
+<defs id="gradient_def"></defs>
+<g id="header_and_v_bars"></g>
+<g id="timeline_body"></g>
+</svg>
+</div>
+
+
+<form name="menu">
+
+<!--
+<div id="detailed_info">
+<div id="year_slider_container">
+<span id="min_year">MIN</span>年
+<input type="range" name="" id="" step="1" />
+<span id="max_year">MAX</span>年
+</div>
+<ul id="description_items"></ul>
+</div>
+-->
+<div id="menu_container" class="container">
+<table>
+
+<tr>
+<th>期間を<wbr>追加</th>
+<td>
+<label for="start_year">開始年</label>: 
+<input type="number" name="start_year" id="start_year" step="1" min="-9999" max="9999" />
+(<label for="start_year_type_actual"><input type="radio" name="start_year_type" id="start_year_type_actual" value="actual" checked />実際の開始年</label>
+<label for="start_year_type_dummy"><input type="radio" name="start_year_type" id="start_year_type_dummy" value="dummy" />単なる左端の指定用</label>)
+<br>
+<label for="end_year">終了年</label>: <input type="number" name="end_year" id="end_year" step="1" min="-9999" max="9999" />
+(<label for="end_year_type_actual"><input type="radio" name="end_year_type" id="end_year_type_actual" value="actual" checked />実際の終了年</label>
+<label for="end_year_type_dummy"><input type="radio" name="end_year_type" id="end_year_type_dummy" value="dummy" />単なる右端の指定用</label>)
+<br>
+<label for="period_label">ラベル (時代名・人名など)</label>: <input type="text" name="period_label" id="period_label" size="30" />
+<br>
+<label for="which_row">配置先: 
+<select name="which_row" id="which_row">
+<option id="1" value="1">1行目</option>
+</select>
+</label>
+&nbsp;
+<label for="color_theme">配色: 
+<select name="color_theme" id="color_theme"></select>
+</label>
+<br>
+以上の設定内容で、<button type="button" onclick="add_period()">期間を追加する</button>
+</td>
+</tr>
+
+<!--
+<tr>
+<th>期間の<wbr>ラベルを<wbr>変更</th>
+<td>
+<select name="" id=""></select> のラベルを
+<input type="text" name="" id="" size="30" /> に
+<button type="button" onclick="">変更する</button>
+</td>
+</tr>
+
+<tr>
+<th>期間の<wbr>範囲を<wbr>変更</th>
+<td>
+<select name="" id=""></select> の
+開始年を
+<input type="number" name="" id="" step="1" min="-9999" max="9999" /> 年
+(<label><input type="radio" name="" id="" value="" />実際の開始年</label>
+<label><input type="radio" name="" id="" value="" />単なる左端の指定用</label>)
+に、終了年を
+<input type="number" name="" id="" step="1" min="-9999" max="9999" /> 年
+(<label><input type="radio" name="" id="" value="" />実際の終了年</label>
+<label><input type="radio" name="" id="" value="" />単なる右端の指定用</label>)
+に、それぞれ
+<button type="button" onclick="">再設定する</button>
+</td>
+</tr>
+
+<tr>
+<th>期間の<wbr>配置を<wbr>変更</th>
+<td>
+<select name="" id=""></select> を
+<select name="" id=""></select> の次の行に
+<button type="button" onclick="">再配置する</button>
+</td>
+</tr>
+
+<tr>
+<th>期間を<wbr>削除</th>
+<td>
+<select name="" id=""></select> を
+<button type="button" onclick="">削除する</button>
+</td>
+</tr>
+-->
+
+<!--
+<tr>
+<th>出来事を<wbr>追加</th>
+<td>
+時期:
+<select name="" id=""></select> の中の
+<input type="number" name="" id="" step="1" min="-9999" max="9999" /> 年
+<br>
+説明: <input type="text" name="" id="" size="30" />
+<br>
+以上の設定内容で、<button type="button" onclick="">期間を追加する</button>
+<br>
+</td>
+</tr>
+
+<tr>
+<th>出来事の<wbr>説明を<wbr>変更</th>
+<td>
+<select name="" id=""></select> の説明を
+<input type="text" name="" id="" size="30" /> に
+<button type="button" onclick="">変更する</button>
+</td>
+</tr>
+
+<tr>
+<th>出来事の<wbr>時期を<wbr>変更</th>
+<td>
+<select name="" id=""></select> の時期を
+<input type="number" name="" id="" step="1" min="-9999" max="9999" /> 年に
+<button type="button" onclick="">変更する</button>
+</td>
+</tr>
+
+<tr>
+<th>出来事を<wbr>削除</th>
+<td>
+<select name="" id=""></select> を
+<button type="button" onclick="">削除する</button>
+</td>
+</tr>
+-->
+
+<tr>
+<th>ダウンロードする</th>
+<td>
+<button type="button" onclick="download_svg()">SVG 形式で年表をダウンロードする</button>
+</td>
+</tr>
+
+<!--
+<tr>
+<th>作成済みの<wbr>データを<wbr>読み込む</th>
+<td>
+<label for="input_svg_file">SVG ファイルを選択して</label>
+(<input type="file" id="input_svg_file" name="input_svg_file" />)、
+その内容を上の枠内に
+<button type="button" onclick="read_in()">表示する</button>。</td>
+</tr>
+-->
+
+</table>
+</div>
+
+</form>
+
+<nav>[
+<a href="https://piyo-ko.github.io">ホーム</a> |
+<a href="https://piyo-ko.github.io/pedigree/pedigree.html">系図作成</a> |
+<!--a href="timeline_maker_en.html"-->English version<!--/a--> |
+バグなどを<a href="https://twitter.com/share?text=@pi__yo__ko%20" target="_blank">Twitter で連絡する</a> |
+<a href="https://piyo-ko.github.io/tools/svg2png.html">PNG 形式への変換</a> (SVG 形式で一
+旦データを保存しないと変換できません) |
+このページに関する説明
+]</nav>
+
+
+</body>
+</html>
