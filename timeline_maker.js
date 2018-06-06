@@ -61,6 +61,9 @@ const CONFIG = {
   vertical_bar_interval_in_year: 25,
   // 期間を表す横棒 (実際は矩形) の高さ
   bar_height: 20,
+  // 期間の端の色をフェードアウトさせる場合に、端から何パーセントのところまで
+  // グラデーションにするか (そこから先の中心に近い部分はべた塗り)。
+  fading_region_ratio: 15,
   // 期間の配置先たる各行の高さ
   row_height: 64,
   // フォントサイズ (一律)。
@@ -138,14 +141,19 @@ function set_theme_defs() {
 
   // 期間を表す矩形の本体の比較的不透明な部分用の色指定用の属性群と、左右両端を
   // フェードアウトさせる場合の最も透明度の高い端の部分用の色指定用の属性群の
-  // ための変数。関数 add_grad を呼ぶ前に設定する。
+  // ための変数。関数 add_grad を呼ぶ前に設定する。なお属性群と書いたが、実際は
+  // stop-opacity と stop-color の二つだけ。
   let opaque_attr, fading_attr;
 
   // フェードアウトしない場合は、opaque_attr に設定された属性を端まで使う。
   // フェードアウトさせる場合は、端に stop 要素を定義して、そこに fading_attr の
   // 属性を設定するとともに、端から 15% のところにも stop 要素を定義して、そこに
-  // opaque_attr の属性を設定する。「15%」という値はとりあえず決め打ちの定数。
+  // opaque_attr の属性を設定する。
+  // なおこの「15%」という値は、CONFIG.fading_region_ratio で設定している。
   // 以上の方針による linearGradient 要素を作成・追加する。
+  const stop_L_offset_str = CONFIG.fading_region_ratio + '%',  // '15%' となる
+    stop_R_offset_str = 
+      parseInt(100 - CONFIG.fading_region_ratio).toString() +'%';  // '85%'
   function add_grad(left_open, right_open, id) {
     const grad = document.createElementNS(SVG_NS, 'linearGradient');
     let grad_id = id;
@@ -154,39 +162,37 @@ function set_theme_defs() {
     grad.setAttribute('id', grad_id);
     add_text_node(grad, '\n');
     // 左側
+    // 左端 (左端から 0% の場所) の stop 要素
     const stop_0 = document.createElementNS(SVG_NS, 'stop');
+    stop_0.setAttribute('offset', '0%');
     if (left_open) {
-      fading_attr.push(['offset', '0%']);
       fading_attr.forEach((k_v) => { stop_0.setAttribute(k_v[0], k_v[1]); });
-      fading_attr.pop();
       grad.appendChild(stop_0);  add_text_node(grad, '\n');
-      const stop_15 = document.createElementNS(SVG_NS, 'stop');
-      opaque_attr.push(['offset', '15%']);
-      opaque_attr.forEach((k_v) => { stop_15.setAttribute(k_v[0], k_v[1]); });
-      opaque_attr.pop();
-      grad.appendChild(stop_15);  add_text_node(grad, '\n');
+      // 左端からのグラデーションの部分と、それより中心側のべた塗りの部分との
+      // 境界に当たる stop 要素
+      const stop_L = document.createElementNS(SVG_NS, 'stop');
+      stop_L.setAttribute('offset', stop_L_offset_str);
+      opaque_attr.forEach((k_v) => { stop_L.setAttribute(k_v[0], k_v[1]); });
+      grad.appendChild(stop_L);  add_text_node(grad, '\n');
     } else {
-      opaque_attr.push(['offset', '0%']);
       opaque_attr.forEach((k_v) => { stop_0.setAttribute(k_v[0], k_v[1]); });
-      opaque_attr.pop();
       grad.appendChild(stop_0);  add_text_node(grad, '\n');
     }
     // 右側
+    // 右端 (左端から 100% の場所) の stop 要素
     const stop_100 = document.createElementNS(SVG_NS, 'stop');
+    stop_100.setAttribute('offset', '100%');
     if (right_open) {
-      const stop_85 = document.createElementNS(SVG_NS, 'stop');
-      opaque_attr.push(['offset', '85%']);
-      opaque_attr.forEach((k_v) => { stop_85.setAttribute(k_v[0], k_v[1]); });
-      opaque_attr.pop();
-      grad.appendChild(stop_85);  add_text_node(grad, '\n');
-      fading_attr.push(['offset', '100%']);
+      // 右端からのグラデーションの部分と、それより中心側のべた塗りの部分との
+      // 境界に当たる stop 要素
+      const stop_R = document.createElementNS(SVG_NS, 'stop');
+      stop_R.setAttribute('offset', stop_R_offset_str);
+      opaque_attr.forEach((k_v) => { stop_R.setAttribute(k_v[0], k_v[1]); });
+      grad.appendChild(stop_R);  add_text_node(grad, '\n');
       fading_attr.forEach((k_v) => { stop_100.setAttribute(k_v[0], k_v[1]); });
-      fading_attr.pop();
       grad.appendChild(stop_100);  add_text_node(grad, '\n');
     } else {
-      opaque_attr.push(['offset', '100%']);
       opaque_attr.forEach((k_v) => { stop_100.setAttribute(k_v[0], k_v[1]); });
-      opaque_attr.pop();
       grad.appendChild(stop_100);  add_text_node(grad, '\n');
     }
     // 
