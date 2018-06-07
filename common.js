@@ -70,7 +70,7 @@ function rename_choice(sel_elt, id, new_str) {
     if (sel_elt.options[i].value === id) {
       const opt = sel_elt.options[i];
       opt.removeChild(opt.firstChild); // テキストノードを削除
-      add_text_node(opt, + new_str);
+      add_text_node(opt, new_str);
       return;
     }
   }
@@ -80,4 +80,3 @@ function rename_choice(sel_elt, id, new_str) {
 /*** DOM 操作 ***/
 /* SVG 要素または HTML 要素に文字列 t のテキストノードを追加 */
 function add_text_node(elt, t) { elt.appendChild(document.createTextNode(t)); }
-
