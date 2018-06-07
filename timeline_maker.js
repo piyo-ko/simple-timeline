@@ -110,16 +110,19 @@ window.top.onload = function () {
 
 /* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
-  const svg_elt = document.getElementById('timeline'),
-        attr = [['width', 0], ['height', 0], ['viewBox', '0 0 0 0']];
-  attr.forEach(k_v => { svg_elt.setAttribute(k_v[0], k_v[1]); });
-
+  resize_svg(0, 0);
   document.getElementById('theme_style_def').innerHTML = '';
   document.getElementById('gradient_def').innerHTML = '';
   document.getElementById('header_and_v_bars').innerHTML = '';
   document.getElementById('timeline_body').innerHTML = '';
 
   set_theme_defs();
+}
+
+function resize_svg(w, h) {
+  const svg_elt = document.getElementById('timeline'),
+    attr = [['width', w], ['height', h], ['viewBox', `0 0 ${w} ${h}`]];
+  attr.forEach(k_v => { svg_elt.setAttribute(k_v[0], k_v[1]); });
 }
 
 /* themes.js に定義されている配色テーマの定義を読み取り、svg 要素内にその定義を
@@ -233,6 +236,15 @@ function check_theme_ids() {
   return(true);
 }
 
+function move_svg_elt(id, dx, dy) {
+  const elt = document.getElementById(id);
+  if (elt === null) { return; }
+  if (! elt.hasAttribute('x') || ! elt.hasAttribute('y')) { return; }
+  const x = parseInt(elt.getAttribute('x')), 
+        y = parseInt(elt.getAttribute('y'));
+  elt.setAttribute('x', x + dx);  elt.setAttribute('y', y + dy);
+}
+
 /* 「期間を追加」メニュー。 */
 function add_period() {
   const new_pid = 'p_' + TIMELINE_DATA.next_period_id++;
@@ -273,10 +285,7 @@ function add_period() {
     TIMELINE_DATA.svg_height = CONFIG.header_row_height + CONFIG.row_height * 2;
     TIMELINE_DATA.max_row_num = 1;
     TIMELINE_DATA.init_state = false;
-
-    svg_elt.setAttribute('width', TIMELINE_DATA.svg_width);
-    svg_elt.setAttribute('height', TIMELINE_DATA.svg_height);
-    svg_elt.setAttribute('viewBox', '0 0 ' + TIMELINE_DATA.svg_width + ' ' + TIMELINE_DATA.svg_height);
+    resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
 
     const header_g_elt = document.getElementById('header_and_v_bars'),
       h_rule = document.createElementNS(SVG_NS, 'line'),
@@ -289,18 +298,18 @@ function add_period() {
     add_selector_option(m.which_row, '2', '2行目');
   } else { // 既存の期間が少なくとも一つはある場合
     if (TIMELINE_DATA.max_row_num < which_row) {
+      if (TIMELINE_DATA.max_row_num + 1 !== which_row) {
+        alert('Unexpected error: TIMELINE_DATA.max_row_num + 1 !== which_row');
+      }
       TIMELINE_DATA.max_row_num++;
       TIMELINE_DATA.svg_height += CONFIG.row_height;
-      svg_elt.setAttribute('height', TIMELINE_DATA.svg_height);
-      svg_elt.setAttribute('viewBox', '0 0 ' + TIMELINE_DATA.svg_width + ' ' + TIMELINE_DATA.svg_height);
+      resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
       const n = TIMELINE_DATA.max_row_num + 1;
       add_selector_option(m.which_row, n, n + '行目');
     }
-
     if (start_year < TIMELINE_DATA.min_year) {
       put_min_year_backwards(start_year);
     }
-
     if (TIMELINE_DATA.max_year < end_year) {
       put_max_year_forward(end_year);
     }
@@ -423,6 +432,10 @@ function update_v_bars() {
   }
 }
 
+/* 種々の期間の開始年のうちで最も早い年 (TIMELINE_DATA.min_year) を 
+new_start_year 年まで遡らせる。それに応じて、年表全体の幅を広げ、既存の要素 
+(矩形、テキスト等) を右へずらす。
+ */
 function put_min_year_backwards(new_start_year) {
   if (TIMELINE_DATA.init_state || TIMELINE_DATA.min_year <= new_start_year) {
     return;
@@ -430,11 +443,41 @@ function put_min_year_backwards(new_start_year) {
 
   const diff_year = TIMELINE_DATA.min_year - new_start_year, // 正になる
     diff_x = diff_year * CONFIG.year_to_px_factor;
+  TIMELINE_DATA.svg_width += diff_x;
+  resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+  TIMELINE_DATA.min_year = new_start_year;
+  TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
+    move_svg_elt(pid, diff_x, 0);
+    move_svg_elt(pid + '_start_year', diff_x, 0);
+    move_svg_elt(pid + '_end_year', diff_x, 0);
+    move_svg_elt(pid + '_label', diff_x, 0);
+  });
 }
 
+/* 種々の期間の開始年のうちで最も早い年 (TIMELINE_DATA.min_year) を 
+new_start_year 年まで遅らせる。それに応じて、年表全体の幅を狭め、既存の要素 
+(矩形、テキスト等) を左へずらす。 */
 function put_min_year_forward(new_start_year) {
+  if (TIMELINE_DATA.init_state || new_start_year <= TIMELINE_DATA.min_year) {
+    return;
+  }
+
+  const diff_year = new_start_year - TIMELINE_DATA.min_year, // 正になる
+    diff_x = diff_year * CONFIG.year_to_px_factor;
+  TIMELINE_DATA.svg_width -= diff_x;
+  resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+  TIMELINE_DATA.min_year = new_start_year;
+  TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
+    move_svg_elt(pid, -diff_x, 0);
+    move_svg_elt(pid + '_start_year', -diff_x, 0);
+    move_svg_elt(pid + '_end_year', -diff_x, 0);
+    move_svg_elt(pid + '_label', -diff_x, 0);
+  });
 }
 
+/* 種々の期間の開始年のうちで最も遅い年 (TIMELINE_DATA.max_year) を
+new_end_year 年まで遅らせる。それに応じて、年表全体の幅を広げる。既存の要素 
+(矩形、テキスト等) の位置は変化しない。 */
 function put_max_year_forward(new_end_year) {
   if (TIMELINE_DATA.init_state || new_end_year <= TIMELINE_DATA.max_year) {
     return;
@@ -442,9 +485,24 @@ function put_max_year_forward(new_end_year) {
 
   const diff_year = new_end_year - TIMELINE_DATA.max_year, // 正になる
     diff_x = diff_year * CONFIG.year_to_px_factor;
+  TIMELINE_DATA.svg_width += diff_x;
+  resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+  TIMELINE_DATA.max_year = new_end_year;
 }
 
+/* 種々の期間の開始年のうちで最も遅い年 (TIMELINE_DATA.max_year) を
+new_end_year 年まで遡らせる。それに応じて、年表全体の幅を狭める。既存の要素 
+(矩形、テキスト等) の位置は変化しない。 */
 function put_max_year_backwards(new_end_year) {
+  if (TIMELINE_DATA.init_state || TIMELINE_DATA.max_year <= new_end_year) {
+    return;
+  }
+
+  const diff_year = TIMELINE_DATA.max_year - new_end_year, // 正になる
+    diff_x = diff_year * CONFIG.year_to_px_factor;
+  TIMELINE_DATA.svg_width -= diff_x;
+  resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+  TIMELINE_DATA.max_year = new_end_year;
 }
 
 /* 「ダウンロードする」メニュー。 */
