@@ -80,3 +80,8 @@ function rename_choice(sel_elt, id, new_str) {
 /*** DOM 操作 ***/
 /* SVG 要素または HTML 要素に文字列 t のテキストノードを追加 */
 function add_text_node(elt, t) { elt.appendChild(document.createTextNode(t)); }
+
+/* 子要素をすべて削除 (elt.innerHTML = '' としても良いが……) */
+function remove_all_children(elt) {
+  while (elt.firstChild) { elt.removeChild(elt.firstChild); }
+}

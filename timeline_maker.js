@@ -94,11 +94,10 @@ window.top.onload = function () {
   sel.selectedIndex = 0;
   m.reset();
 
-/*
   if (PERIOD_SELECTORS.length === 0) {
-    PERIOD_SELECTORS.push(m.   );
+    PERIOD_SELECTORS.push(m.period_to_re_label);
   }
-*/
+
 /*
   if (EVENT_SELECTORS.length === 0) {
     EVENT_SELECTORS.push(m.   );
@@ -378,6 +377,11 @@ function add_period() {
 
   const p_dat = new period_data(start_year, end_year, which_row, color_theme);
   TIMELINE_DATA.periods.set(new_pid, p_dat);
+  PERIOD_SELECTORS.forEach(sel => {
+    add_selector_option(sel, new_pid, period_label);
+    // `[${start_year}, ${end_year}] ${period_label}` を表示してもよい
+    // かもしれないが……
+  });
 }
 
 function update_v_bars() {
@@ -503,6 +507,27 @@ function put_max_year_backwards(new_end_year) {
   TIMELINE_DATA.svg_width -= diff_x;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.max_year = new_end_year;
+}
+
+/* 「期間のラベルを変更」メニュー。 */
+function modify_period_label() {
+  const pid = selected_choice(document.menu.period_to_re_label),
+    new_period_label = document.menu.new_period_label.value;
+
+  if (new_period_label === '') {
+    const msg = {ja: '新たなラベルを入力してください', 
+                 en: 'Enter a new label.'};
+    alert(msg[LANG]);  return;
+  }
+  document.menu.new_period_label.value = '';
+
+  const label_txt_elt = document.getElementById(pid + '_label');
+  remove_all_children(label_txt_elt);
+  add_text_node(label_txt_elt, new_period_label);
+
+  PERIOD_SELECTORS.forEach(sel => {
+    rename_choice(sel, pid, new_period_label);
+  });
 }
 
 /* 「ダウンロードする」メニュー。 */
