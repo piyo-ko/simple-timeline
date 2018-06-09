@@ -5,9 +5,10 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /* ページの言語。日本語がデフォルト。英語 (en) のページも後で作る。 */
 let LANG = 'ja';
 
-/*  */
+/* 入力フォーム中の期間・出来事を表すセレクタを要素とする配列。 */
 const PERIOD_SELECTORS = new Array(), EVENT_SELECTORS = new Array();
 
+/* 各期間について管理するためのオブジェクト */
 class period_data {
   constructor(start_year, end_year, row, color_theme) {
     this.start_year = start_year;
@@ -18,11 +19,18 @@ class period_data {
   print() { console.log(JSON.stringify(this)); }
 }
 
-/*  */
+/* デバッグ対象の関数に対応するプロパティを 0 以上の値に設定すること。 */
+const MODE = {
+  f_add_period: 0,
+  f_update_v_bars: 0,
+  f_remove_period: 0
+};
+
+/* 年表全体の現状を管理する大域オブジェクト。 */
 var TIMELINE_DATA = TIMELINE_DATA || {
   next_period_id: 0, 
   next_event_id: 0, 
-  max_row_num: 0,
+  max_row_num: 0,  // 1 行目は 1 と数える。0 は何も期間がないことを表す。
   svg_width: 0, 
   svg_height: 0,
   init_state: true,
@@ -43,6 +51,21 @@ var TIMELINE_DATA = TIMELINE_DATA || {
     this.v_bars = new Set();
     this.min_year = 9999;
     this.max_year = -9999;
+  },
+  print: function() {
+    console.log('TIMELINE_DATA is:\n' + JSON.stringify(this) + '\n');
+    // 型が Map や Set のプロパティが JSON.stringify でうまく出力されなかった……。
+    console.log(  'periods:');
+    this.periods.forEach((dat, pid, m) => {
+      console.log(`  ${pid}: ${JSON.stringify(dat)} ,\n`);
+    });
+    console.log(  'events:');
+    this.events.forEach((dat, eid, m) => {
+      console.log(`  ${eid}: ${JSON.stringify(dat)} ,\n`);
+    });
+    let s =   'v_bars: ';
+    this.v_bars.forEach(year => { s += year + ','; });
+    console.log(s);
   }
 };
 
@@ -95,7 +118,7 @@ window.top.onload = function () {
   m.reset();
 
   if (PERIOD_SELECTORS.length === 0) {
-    PERIOD_SELECTORS.push(m.period_to_re_label);
+    PERIOD_SELECTORS.push(m.period_to_re_label, m.period_to_remove);
   }
 
 /*
@@ -118,6 +141,7 @@ function reset_svg() {
   set_theme_defs();
 }
 
+/* svg 要素の大きさを変更する。 */
 function resize_svg(w, h) {
   const svg_elt = document.getElementById('timeline'),
     attr = [['width', w], ['height', h], ['viewBox', `0 0 ${w} ${h}`]];
@@ -235,13 +259,15 @@ function check_theme_ids() {
   return(true);
 }
 
-function move_svg_elt(id, dx, dy) {
+/* SVG 要素 (rect, line, circle) を移動させる。 */
+function move_svg_elt(id, dx, dy, is_circle = false) {
   const elt = document.getElementById(id);
   if (elt === null) { return; }
-  if (! elt.hasAttribute('x') || ! elt.hasAttribute('y')) { return; }
-  const x = parseInt(elt.getAttribute('x')), 
-        y = parseInt(elt.getAttribute('y'));
-  elt.setAttribute('x', x + dx);  elt.setAttribute('y', y + dy);
+  const x_name = (is_circle ? 'cx' : 'x'), y_name = (is_circle ? 'cy' : 'y');
+  if (! elt.hasAttribute(x_name) || ! elt.hasAttribute(y_name)) { return; }
+  const x = parseInt(elt.getAttribute(x_name)), 
+        y = parseInt(elt.getAttribute(y_name));
+  elt.setAttribute(x_name, x + dx);  elt.setAttribute(y_name, y + dy);
 }
 
 /* 「期間を追加」メニュー。 */
@@ -259,14 +285,24 @@ function add_period() {
 
   m.period_label.value = m.start_year.value = m.end_year.value = '';
 
+  if (isNaN(start_year)) {
+    const msg = {ja: '開始年は整数を入力してください', 
+                 en: 'Enter an integer for the start year.'};
+    alert(msg[LANG]);  return;
+  }
+  if (isNaN(end_year)) {
+    const msg = {ja: '終了年は整数を入力してください', 
+                 en: 'Enter an integer for the end year.'};
+    alert(msg[LANG]);  return;
+  }
   if (period_label === '') {
     const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
     alert(msg[LANG]);  return;
   }
   if (end_year <= start_year) {
     const msg = {
-      ja: '開始年より前の終了年を指定しないでください',
-      en: 'Do not enter the end year that is earlier than the start year.'
+      ja: '開始年以前の終了年を指定しないでください',
+      en: 'Do not enter the end year that is earlier than or equal to the start year.'
     };
     alert(msg[LANG]);  return;
   }
@@ -377,6 +413,8 @@ function add_period() {
 
   const p_dat = new period_data(start_year, end_year, which_row, color_theme);
   TIMELINE_DATA.periods.set(new_pid, p_dat);
+  if (MODE.f_add_period > 0) { console.log('add_period():'); }
+  TIMELINE_DATA.print();
   PERIOD_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_pid, period_label);
     // `[${start_year}, ${end_year}] ${period_label}` を表示してもよい
@@ -384,17 +422,44 @@ function add_period() {
   });
 }
 
+/* 目盛用の縦線と、それに対応する年のテキスト要素と、最上段の横罫線とを更新する。
+年表全体で最も早い年や最も遅い年が変化した場合や、年表全体の高さが変化した場合に
+呼ばれる (これらの場合の中には、初めて期間を追加した場合も含まれる)。 */
 function update_v_bars() {
+  // たとえば年表全体で最も早い年が 123 年のとき、x 座標が 0 となるのは、
+  // 123 - 5 = 118 年 (5 は CONFIG.h_margin_in_year) に相当する。
+  // しかし、仮にこれが 25 (CONFIG.vertical_bar_interval_in_year) で割り切れた
+  // としても、x 座標が 0 の、ギリギリのところに目盛を描画したくはない。
+  // そこで、それよりも 1 年だけ内側 (年表の中心側) のところを、
+  // 「目盛を描画する対象になりうる最小の年」として求める。
+  // これが min_y_incl_margin であり、年が最も遅い側について同趣旨で求めるのが
+  // max_y_incl_margin である。
   const min_y_incl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year + 1,
-    max_y_incl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year - 1,
-    min_y = min_y_incl_margin - 
-            min_y_incl_margin % CONFIG.vertical_bar_interval_in_year,
+    max_y_incl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year - 1;
+  // 上記の二つの値は CONFIG.vertical_bar_interval_in_year で割り切れるとは
+  // 限らない。そこで、上記の二つの値で挟まれた閉区間において、
+  // CONFIG.vertical_bar_interval_in_year で割り切れる最小値と最大値を求める。
+  const min_y_rem = min_y_incl_margin % CONFIG.vertical_bar_interval_in_year,
+    min_y = (min_y_rem === 0) ? min_y_incl_margin :
+            min_y_incl_margin - min_y_rem + CONFIG.vertical_bar_interval_in_year,
     max_y = max_y_incl_margin - 
-            max_y_incl_margin % CONFIG.vertical_bar_interval_in_year,
-    header_elt = document.getElementById('header_and_v_bars'),
-    y_bottom = CONFIG.header_row_height + 
+            max_y_incl_margin % CONFIG.vertical_bar_interval_in_year;
+  // update_v_bars で描画対象となる要素を包含する親要素
+  const header_elt = document.getElementById('header_and_v_bars');
+  // 目盛線の下端
+  const y_bottom = CONFIG.header_row_height + 
                    CONFIG.row_height * (TIMELINE_DATA.max_row_num + 1);
 
+  if (MODE.update_v_bars > 0) {
+    console.log('min_y_incl_margin=' + min_y_incl_margin);
+    console.log('max_y_incl_margin=' + max_y_incl_margin);
+    console.log('min_y=' + min_y);
+    console.log('max_y=' + max_y);
+    console.log('y_bottom=' + y_bottom);
+  }
+
+  // 幅の変更にともなって不要となった目盛線と、それに対応する年のテキスト
+  // 要素を、すべて削除する。
   TIMELINE_DATA.v_bars.forEach(y => {
     if (y < min_y || max_y < y) { 
       TIMELINE_DATA.v_bars.delete(y);
@@ -405,17 +470,19 @@ function update_v_bars() {
     }
   });
 
+  // min_y 年から max_y 年までの目盛を描画する。
   for (let year = min_y; year <= max_y; 
            year += CONFIG.vertical_bar_interval_in_year) {
+    // year 年の目盛に対応する x 座標と、この目盛用のテキスト要素の幅。
     const x = (year - TIMELINE_DATA.min_year + CONFIG.h_margin_in_year) *
                 CONFIG.year_to_px_factor,
         txt_span = year.toString().length * CONFIG.monospace_char_width;
     if (TIMELINE_DATA.v_bars.has(year)) { // year 年の縦線が存在する場合。
       const v = document.getElementById('v_bar_' + year),
-        v_attr = [['x1', x], ['x2', x], ['y2', y_bottom]];
+        v_attr = [['x1', x], ['x2', x], ['y2', y_bottom]]; // y1 は変化しない。
       v_attr.forEach(k_v => { v.setAttribute(k_v[0], k_v[1]); });
       const v_txt = document.getElementById('v_bar_txt_' + year);
-      v_txt.setAttribute('x', x - txt_span/2);
+      v_txt.setAttribute('x', x - txt_span/2); // x 以外は変化しない。
     } else { // year 年の縦線が存在しないので、新たに作成する。
       const v = document.createElementNS(SVG_NS, 'line'),
         v_attr = [['id', 'v_bar_' + year], ['class', 'v_bar'],
@@ -434,6 +501,15 @@ function update_v_bars() {
       TIMELINE_DATA.v_bars.add(year);
     }
   }
+
+  // 横罫線の右端の座標を再設定する (それ以外は常に変化なし)。
+  document.getElementById('h_rule').setAttribute('x2', TIMELINE_DATA.svg_width);
+}
+
+/* 目盛用の縦線と、それに対応する年のテキスト要素と、最上段の横罫線とを、すべて
+削除する。 */
+function init_v_bars() {
+  remove_all_children(document.getElementById('header_and_v_bars'));
 }
 
 /* 種々の期間の開始年のうちで最も早い年 (TIMELINE_DATA.min_year) を 
@@ -528,6 +604,121 @@ function modify_period_label() {
   PERIOD_SELECTORS.forEach(sel => {
     rename_choice(sel, pid, new_period_label);
   });
+}
+
+/* 「期間を削除」メニュー。 */
+function remove_period() {
+  if (MODE.f_remove_period > 0) {
+    console.log('in remove_period:');
+    TIMELINE_DATA.print();
+  }
+  const pid = selected_choice(document.menu.period_to_remove),
+    g = document.getElementById(pid + 'g');
+  remove_all_children(g);
+  document.getElementById('timeline_body').removeChild(g);
+
+  PERIOD_SELECTORS.forEach(sel => { remove_choice(sel, pid); });
+  const deleted_dat = TIMELINE_DATA.periods.get(pid);  // 退避
+  TIMELINE_DATA.periods.delete(pid);
+
+  // この期間を削除することによって、年表全体で最も早い年・最も遅い年が変化
+  // する可能性がある。また、最初の行または (余白行を除く) 最終行が、空行になる
+  // 可能性もある。
+  // それらの場合に、年表全体の幅・高さを調整する必要がある。
+
+  if (TIMELINE_DATA.periods.size === 0) {
+    // この期間を削除すると、期間が一つもなくなってしまう場合。
+    resize_svg(0, 0);
+    TIMELINE_DATA.reset_all();
+    init_v_bars();
+    // 配置先の行を選択するセレクタから、最後の選択肢を削除する。
+    remove_choice(document.menu.which_row, 2);
+  } else { // 一つ以上の期間が残る場合
+    let need_to_update_v_bars = false;  // update_v_bars() する必要があるか
+
+    // 削除した期間の開始年が年表全体で最も早い年だった場合。
+    if (deleted_dat.start_year === TIMELINE_DATA.min_year) {
+      // 残りの期間の開始年のうちで最も早い年を求める。
+      let new_min_year = CONFIG.max_allowable_year;
+      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+        if (dat.start_year < new_min_year) { new_min_year = dat.start_year; }
+      });
+      // 年表全体で最も早い年が後ろへ繰り下がる場合、幅を調整する。
+      if (TIMELINE_DATA.min_year < new_min_year) {
+        need_to_update_v_bars = true;
+        put_min_year_forward(new_min_year);
+      }
+    }
+
+    // 削除した期間の終了年が年表全体で最も遅い年だった場合。
+    if (deleted_dat.end_year === TIMELINE_DATA.max_year) {
+      // 残りの期間の終了年のうちで最も遅い年を求める。
+      let new_max_year = CONFIG.min_allowable_year;
+      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+        if (new_max_year < dat.end_year) { new_max_year = dat.end_year; }
+      });
+      // 年表全体で最も遅い年が前へ遡る場合、幅を調整する。
+      if (new_max_year < TIMELINE_DATA.max_year) {
+        need_to_update_v_bars = true;
+        put_max_year_backwards(new_max_year);
+      }
+    }
+
+    // 削除した期間が最初の行に配置されていた場合。
+    if (deleted_dat.row === 1) {
+      let found = false;
+      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+        if (dat.row === 1) { found = true; }
+      });
+      if (! found) { // 最初の行に他の期間がない場合。
+        need_to_update_v_bars = true;
+        // 残っている期間をすべて一つずつ上の行にずらす。
+        TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+          dat.row--;
+          const targets = [pid, pid + '_start_year', pid + '_end_year',
+                           pid + '_label'];
+          targets.forEach(elt_id => {
+            const elt = document.getElementById(elt_id);
+            if (elt !== null) {
+              const y = parseInt(elt.getAttribute('y')) - CONFIG.row_height;
+              elt.setAttribute('y', y);
+            }
+          });
+        });
+        // 配置先の行を選択するセレクタから、最後の選択肢を削除する。
+        remove_choice(document.menu.which_row, TIMELINE_DATA.max_row_num + 1);
+        // 最終行を削除して、年表全体の高さを減らす。
+        TIMELINE_DATA.max_row_num--;
+        TIMELINE_DATA.svg_height -= CONFIG.row_height;
+        resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+      }
+    }
+
+    // 削除した期間が、(余白行を除く) 最終行に配置されていた場合。
+    if (deleted_dat.row === TIMELINE_DATA.max_row_num) {
+      let found = false;
+      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+        if (dat.row === TIMELINE_DATA.max_row_num) { found = true; }
+      });
+      if (! found) { // 最終行に他の期間がない場合。
+        need_to_update_v_bars = true;
+        // 配置先の行を選択するセレクタから、最後の選択肢を削除する。
+        remove_choice(document.menu.which_row, deleted_dat.row + 1);
+        // 年表の最終行 (余白行) を削除して、年表全体の高さを減らす
+        // (消した期間があった行が、余白行となる)。
+        TIMELINE_DATA.max_row_num--;
+        TIMELINE_DATA.svg_height -= CONFIG.row_height;
+        resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+      }
+    }
+
+    if (need_to_update_v_bars) { update_v_bars(); }
+
+    if (MODE.f_remove_period > 0) {
+      TIMELINE_DATA.print();
+      console.log('need_to_update_v_bars=' + need_to_update_v_bars);
+    }
+  }
 }
 
 /* 「ダウンロードする」メニュー。 */

@@ -55,7 +55,8 @@ function add_selector_option(sel_elt, id, displayed_name) {
 function remove_choice(sel_elt, id) {
   let i;
   for (i = 0; i < sel_elt.options.length; i++) {
-    if (sel_elt.options[i].value === id) { break; }
+    // 数字を表す文字列が id として使われる場合があるので、=== でなく == を使う。
+    if (sel_elt.options[i].value == id) { break; }
   }
   sel_elt.removeChild(sel_elt.options[i]);
   // 削除した選択肢の直後の選択肢を選択する (削除したのが最後のものだった場合は
