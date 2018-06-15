@@ -309,7 +309,7 @@ function add_period() {
 
   const svg_elt = document.getElementById('timeline'),
     timeline_body_elt = document.getElementById('timeline_body'),
-    period_len = end_year - start_year,
+    period_len = end_year - start_year + 1,
     rect_w = period_len * CONFIG.year_to_px_factor;
 
   if (TIMELINE_DATA.init_state) { // これが最初の期間の追加である場合
@@ -335,6 +335,7 @@ function add_period() {
     if (TIMELINE_DATA.max_row_num < which_row) {
       if (TIMELINE_DATA.max_row_num + 1 !== which_row) {
         alert('Unexpected error: TIMELINE_DATA.max_row_num + 1 !== which_row');
+        return;
       }
       TIMELINE_DATA.max_row_num++;
       TIMELINE_DATA.svg_height += CONFIG.row_height;
@@ -351,6 +352,9 @@ function add_period() {
   }
 
   update_v_bars();
+  svg_elt.dataset.min_year = TIMELINE_DATA.min_year;
+  svg_elt.dataset.max_year = TIMELINE_DATA.max_year;
+  svg_elt.dataset.max_row_num = TIMELINE_DATA.max_row_num;
 
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('id', new_pid + 'g');
@@ -413,8 +417,10 @@ function add_period() {
 
   const p_dat = new period_data(start_year, end_year, which_row, color_theme);
   TIMELINE_DATA.periods.set(new_pid, p_dat);
-  if (MODE.f_add_period > 0) { console.log('add_period():'); }
-  TIMELINE_DATA.print();
+  if (MODE.f_add_period > 0) {
+    console.log('add_period():');
+    TIMELINE_DATA.print();
+  }
   PERIOD_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_pid, period_label);
     // `[${start_year}, ${end_year}] ${period_label}` を表示してもよい
@@ -742,9 +748,155 @@ function read_in() {
     // として書き出す。
     document.getElementById('timeline_container').innerHTML = e.target.result;
     // **** TO DO **** SVGの各要素を読み取って、変数の設定を行う。
-    const b = {ja: '作成済みのデータを読み込む', 
-               en: 'reading data saved before'};
+    set_read_values();
   }
   // テキストファイルとして読み込む。
   reader.readAsText(document.getElementById('input_svg_file').files[0]);
 }
+
+/*  */
+function set_read_values() {
+  // (1) セレクタの選択肢を初期化。フォームの各入力もリセットしておく。
+  PERIOD_SELECTORS.forEach(sel => { remove_all_children(sel); });
+  EVENT_SELECTORS.forEach(sel => { remove_all_children(sel); });
+  const menu = document.menu, which_row = menu.which_row;
+  remove_all_children(which_row);
+  menu.reset();
+
+  // (2) 年表全体に関する値の確認・設定
+  const svg_elt = document.getElementById('timeline');
+  TIMELINE_DATA.reset_all();
+
+  // (2-1) 幅と高さ
+  const svg_width = parseInt(svg_elt.getAttribute('width')),
+        svg_height = parseInt(svg_elt.getAttribute('height'));
+  if (isNaN(svg_width)) {
+    const msg = {ja: '幅が不正です', en: 'An illegal width is specified.'};
+    alert(msg[LANG]);  reset_svg();  return;
+  }
+  if (isNaN(svg_height)) {
+    const msg = {ja: '高さが不正です', en: 'An illegal height is specified.'};
+    alert(msg[LANG]);  reset_svg();  return;
+  }
+  TIMELINE_DATA.svg_width = svg_width;
+  TIMELINE_DATA.svg_height = svg_height;
+
+  // (2-2) 行数 (高さとの整合性も確かめる)
+  const body_h = svg_height - CONFIG.header_row_height;
+  let illegal_height = true, total_rows = 0;
+  if (body_h % CONFIG.row_height === 0) {
+    total_rows = body_h / CONFIG.row_height;  // 最後の空白行も含めた行数
+    if (parseInt(svg_elt.dataset.max_row_num) === total_rows - 1) {
+      // 空白行を除く、使用済みの行番号の最大値 (1 から数える)
+      TIMELINE_DATA.max_row_num = total_rows - 1;
+      illegal_height = false;
+    }
+  }
+  if (illegal_height) {
+    const msg = {ja: '高さと行数が不整合です',
+                 en: 'The height is inconsistent with the maximum row number.'};
+    console.log(`svg_height=${svg_height}, body_h=${body_h}, r=${r}`);
+    alert(msg[LANG]);  reset_svg();  return;
+  }
+
+  // (2-3) 行番号が最大の行の次の行 (つまり空白行) のぶんまで選択肢を追加する。
+  for (let i = 1; i <= total_rows; i++) {
+    add_selector_option(which_row, i, i + '行目');
+  }
+
+  // (2-4) 最も早い年と最も遅い年 (幅との整合性も確かめる)
+  const min_year = parseInt(svg_elt.dataset.min_year),
+    max_year = parseInt(svg_elt.dataset.max_year);
+  if (isNaN(min_year) || min_year < CONFIG.min_allowable_year) {
+    const msg = {ja: '最も早い年が不正です',
+                 en: 'An illegal value is specified as the earliest year.'};
+    alert(msg[LANG]);  reset_svg();  return;
+  }
+  if (isNaN(max_year) || CONFIG.max_allowable_year < max_year) {
+    const msg = {ja: '最も遅い年が不正です',
+                 en: 'An illegal value is specified as the latest year.'};
+    alert(msg[LANG]);  reset_svg();  return;
+  }
+  if (max_year <= min_year) {
+    const msg = {ja: '最も遅い年は、最も早い年より後の年でなくてはなりません',
+                 en: 'A year later than the earliest year must be specified as the latest year.'};
+    alert(msg[LANG]);  reset_svg();  return;
+  }
+  TIMELINE_DATA.min_year = min_year;
+  TIMELINE_DATA.max_year = max_year;
+  const year_span = max_year + 1 - min_year + CONFIG.h_margin_in_year * 2;
+  if (year_span * CONFIG.year_to_px_factor !== svg_width) {
+    const msg = {ja: '最も早い年から最も遅い年までの長さと幅とが不整合です',
+                 en: 'The span between the earliest year and the latest year is inconsistent with the width.'};
+    console.log(`min_year=${min_year}, max_year=${max_year}, year_span=${year_span}, svg_width=${svg_width}`);
+    alert(msg[LANG]);  reset_svg();  return;
+  }
+
+  // (3) 配色テーマの確認。
+  // (a) 読み取ったデータと themes.js で ID が同一のテーマは、読み取った
+  // データが優先。
+  // (b) 読み取ったデータにのみ含まれるテーマは、そのまま残す。
+  // (c) 読み取ったデータになく themes.js にのみあるテーマを追加する。
+  const  style_elt = document.getElementById('theme_style_def'),
+    grad_elt = document.getElementById('gradient_def');
+  // *** TO DO *** あとで実装する
+
+  // (4) 各期間の確認。
+  const timeline_body_elt = document.getElementById('timeline_body'),
+    period_g_elts = timeline_body_elt.getElementsByTagName('g'), 
+    p_num = period_g_elts.length;
+  if (p_num > 0) { TIMELINE_DATA.init_state = false; }
+  let next_period_id = 0;
+
+  for (let i = 0; i < p_num; i++) { // 期間を一つずつ見てゆく。
+    const cur_g = period_g_elts[i], cur_gid = cur_g.getAttribute('id');
+    let m = cur_gid.match(/^p_(\d+)g$/);
+    if (m === null || m.length !== 2) {
+      const msg = {ja: m[0] + 'は不正な期間IDです', 
+                   en: m[0] + ' is an illegal period ID.'};
+      alert(msg[LANG]);  reset_svg();  return;
+    }
+
+    const id_num = parseInt(m[1]), // ID の数字部分を取り出す。
+       cur_pid = 'p_' + id_num,
+       cur_p = document.getElementById(cur_pid); // rect 要素
+    if (next_period_id <= id_num) { next_period_id = id_num + 1; }
+
+    const x = parseInt(cur_p.getAttribute('x')),
+      y = parseInt(cur_p.getAttribute('y')),
+      w = parseInt(cur_p.getAttribute('width')),
+      fill = cur_p.getAttribute('fill'),
+      row_start_y = y - CONFIG.v_margin_within_row - CONFIG.font_size,
+      r = (row_start_y - CONFIG.header_row_height) / CONFIG.row_height + 1,
+      start_year = x / CONFIG.year_to_px_factor
+                    + TIMELINE_DATA.min_year - CONFIG.h_margin_in_year,
+      end_year = start_year + (w / CONFIG.year_to_px_factor) - 1;
+    m = fill.match(/^url\(#([a-zA-Z_]\w*)_(closed|open)_(closed|open)\)$/);
+    if  (m === null || m.length !== 4) {
+      const msg = {ja: m[0] + ' は不正な配色テーマ指定です',
+                   en: 'The color theme is incorrectly specified as ' + m[0] + '.'};
+      alert(msg[LANG]);  reset_svg();  return;
+    }
+    const color_theme = m[1] + '_' + m[2] + '_' + m[3];
+    //console.log(`id_num=${id_num}, x=${x}, y=${y}, w=${w}, color_theme=${color_theme}, r=${r}, start_year=${start_year}, end_year=${end_year}`);
+
+    const p_dat = new period_data(start_year, end_year, r, color_theme);
+    TIMELINE_DATA.periods.set(cur_pid, p_dat);
+    // この期間に相当する選択肢をセレクタに追加
+    PERIOD_SELECTORS.forEach(sel => {
+      const label_txt = document.getElementById(cur_pid + '_label').textContent;
+      add_selector_option(sel, cur_pid, label_txt);
+    });
+  }
+  // 期間の ID 用に使用済みの番号のうちの最大値よりも 1 だけ大きい値
+  TIMELINE_DATA.next_period_id = next_period_id;
+
+  // (5) 縦の目盛線と横罫線を再描画する (妥当性を確認するよりも強制的に再描画
+  // する方が楽で確実なので)。
+  update_v_bars();
+
+
+  // (6) 出来事の確認。
+  // *** TO DO: 出来事を一つずつ見てゆく。
+}
+
