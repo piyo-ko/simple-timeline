@@ -10,12 +10,23 @@ const PERIOD_SELECTORS = new Array(), EVENT_SELECTORS = new Array();
 
 /* 各期間について管理するためのオブジェクト */
 class period_data {
-  constructor(start_year, end_year, row, color_theme) {
+  constructor(start_year, end_year, row, base_color_theme, color_theme) {
     this.start_year = start_year;
     this.end_year = end_year;
     this.row = row;
+    this.base_color_theme = base_color_theme;
     this.color_theme = color_theme;
   }
+  print() { console.log(JSON.stringify(this)); }
+  is_included(year) {
+    if (isNaN(year)) { return(false); }
+    return( this.start_year <= year && year <= this.end_year );
+  }
+}
+
+/* 各出来事について管理するためのオブジェクト */
+class event_data {
+  constructor(year, period_id) { this.year = year; this.period_id = period_id; }
   print() { console.log(JSON.stringify(this)); }
 }
 
@@ -118,7 +129,8 @@ window.top.onload = function () {
   m.reset();
 
   if (PERIOD_SELECTORS.length === 0) {
-    PERIOD_SELECTORS.push(m.period_to_re_label, m.period_to_remove);
+    PERIOD_SELECTORS.push(m.period_to_re_label, m.period_to_remove,
+      m.period_including_this_event);
   }
 
 /*
@@ -415,7 +427,7 @@ function add_period() {
 
   timeline_body_elt.appendChild(g);  add_text_node(timeline_body_elt, '\n');
 
-  const p_dat = new period_data(start_year, end_year, which_row, color_theme);
+  const p_dat = new period_data(start_year, end_year, which_row, color_theme, gradient_def_name);
   TIMELINE_DATA.periods.set(new_pid, p_dat);
   if (MODE.f_add_period > 0) {
     console.log('add_period():');
@@ -727,6 +739,62 @@ function remove_period() {
   }
 }
 
+/* 「出来事を追加」メニュー。 */
+function add_event() {
+  const new_eid = 'e_' + TIMELINE_DATA.next_event_id++;
+  const m = document.menu,
+    pid = selected_choice(m.period_including_this_event),
+    p_dat = TIMELINE_DATA.periods.get(pid),
+    event_year = parseInt(m.event_year.value),
+    event_label = m.event_label.value;
+
+  m.event_year.value = m.event_label.value = '';
+
+  if (p_dat === undefined) {
+    alert('Unexpected error: add_event()');  return;
+  }
+  if (isNaN(event_year)) {
+    const msg = {ja: '出来事の起きた年を整数で入力してください',
+                 en: 'Enter an integer for the year when the event occurred.'};
+    alert(msg[LANG]);  return;
+  }
+  if (! p_dat.is_included(event_year)) {
+    const msg = {ja: '選択した期間の範囲内の年を入力してください',
+                 en: 'Enter a year included within the selected period.'};
+    alert(msg[LANG]);  return;
+  }
+  if (event_label === '') {
+    const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
+    alert(msg[LANG]);  return;
+  }
+
+  const g = document.createElementNS(SVG_NS, 'g');
+  g.setAttribute('id', new_eid + 'g');
+
+  const e_title = document.createElementNS(SVG_NS, 'title');
+  add_text_node(e_title, event_label + ' (' + event_year + ')');
+  g.appendChild(e_title);  add_text_node(g, '\n');
+
+  const e_circle = document.createElementNS(SVG_NS, 'circle'),
+    cx = (CONFIG.h_margin_in_year + (event_year - TIMELINE_DATA.min_year) + 0.5)
+           * CONFIG.year_to_px_factor,
+    cy = CONFIG.header_row_height + (p_dat.row - 1) * CONFIG.row_height +
+         CONFIG.v_margin_within_row + CONFIG.font_size + CONFIG.bar_height / 2,
+    circle_attr = [['id', new_eid],  ['class', p_dat.base_color_theme],
+                   ['cx', cx], ['cy', cy], ['r', CONFIG.circle_radius]];
+  circle_attr.forEach(k_v => { e_circle.setAttribute(k_v[0], k_v[1]); });
+  g.appendChild(e_circle);  add_text_node(g, '\n');
+
+  const period_g = document.getElementById(pid + 'g');
+  period_g.appendChild(g);  add_text_node(period_g, '\n');
+
+  const e_dat = new event_data(event_year, pid);
+  TIMELINE_DATA.events.set(new_eid, e_dat);
+  EVENT_SELECTORS.forEach(sel => {
+    add_selector_option(sel, new_eid, event_label);
+  });
+}
+
 /* 「ダウンロードする」メニュー。 */
 function download_svg() {
   const s = document.getElementById('timeline_container').innerHTML,
@@ -754,7 +822,7 @@ function read_in() {
   reader.readAsText(document.getElementById('input_svg_file').files[0]);
 }
 
-/*  */
+/* 「作成済みのデータを読み込む」メニュー。 */
 function set_read_values() {
   // (1) セレクタの選択肢を初期化。フォームの各入力もリセットしておく。
   PERIOD_SELECTORS.forEach(sel => { remove_all_children(sel); });
@@ -880,7 +948,7 @@ function set_read_values() {
     const color_theme = m[1] + '_' + m[2] + '_' + m[3];
     //console.log(`id_num=${id_num}, x=${x}, y=${y}, w=${w}, color_theme=${color_theme}, r=${r}, start_year=${start_year}, end_year=${end_year}`);
 
-    const p_dat = new period_data(start_year, end_year, r, color_theme);
+    const p_dat = new period_data(start_year, end_year, r, m[1], color_theme);
     TIMELINE_DATA.periods.set(cur_pid, p_dat);
     // この期間に相当する選択肢をセレクタに追加
     PERIOD_SELECTORS.forEach(sel => {

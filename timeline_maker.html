@@ -112,22 +112,21 @@
 </td>
 </tr>
 
-
-<!--
 <tr>
 <th>出来事を<wbr>追加</th>
 <td>
 時期:
-<select name="" id=""></select> の中の
-<input type="number" name="" id="" step="1" min="-9999" max="9999" /> 年
+<select name="period_including_this_event" id="period_including_this_event"></select> の中の
+<input type="number" name="event_year" id="event_year" step="1" min="-9999" max="9999" /> 年
 <br>
-説明: <input type="text" name="" id="" size="30" />
+説明: <input type="text" name="event_label" id="event_label" size="30" />
 <br>
-以上の設定内容で、<button type="button" onclick="">期間を追加する</button>
+以上の設定内容で、<button type="button" onclick="add_event()">出来事を追加する</button>
 <br>
 </td>
 </tr>
 
+<!--
 <tr>
 <th>出来事の<wbr>説明を<wbr>変更</th>
 <td>
