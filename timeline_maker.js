@@ -6,7 +6,7 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 let LANG = 'ja';
 
 /* 入力フォーム中の期間・出来事を表すセレクタを要素とする配列。 */
-const PERIOD_SELECTORS = new Array(), EVENT_SELECTORS = new Array();
+const PERIOD_SELECTORS = new Set(), EVENT_SELECTORS = new Set();
 
 /* 各期間について管理するためのオブジェクト */
 class period_data {
@@ -128,15 +128,11 @@ window.top.onload = function () {
   sel.selectedIndex = 0;
   m.reset();
 
-  if (PERIOD_SELECTORS.length === 0) {
-    PERIOD_SELECTORS.push(m.period_to_re_label, m.period_to_remove,
-      m.period_including_this_event);
-  }
+  PERIOD_SELECTORS.add(m.period_to_re_label, m.period_to_remove,
+    m.period_including_this_event);
 
 /*
-  if (EVENT_SELECTORS.length === 0) {
-    EVENT_SELECTORS.push(m.   );
-  }
+  EVENT_SELECTORS.add(m.   );
 */
   reset_svg();
   return(true);
