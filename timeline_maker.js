@@ -769,6 +769,7 @@ function add_event() {
   g.setAttribute('id', new_eid + 'g');
 
   const e_title = document.createElementNS(SVG_NS, 'title');
+  e_title.setAttribute('id', new_eid + '_label');
   add_text_node(e_title, event_label + ' (' + event_year + ')');
   g.appendChild(e_title);  add_text_node(g, '\n');
 
