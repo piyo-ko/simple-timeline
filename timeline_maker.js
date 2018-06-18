@@ -26,7 +26,7 @@ class period_data {
 
 /* 各出来事について管理するためのオブジェクト */
 class event_data {
-  constructor(year, period_id) { this.year = year; this.period_id = period_id; }
+  constructor(year, event_id) { this.year = year; this.event_id = event_id; }
   print() { console.log(JSON.stringify(this)); }
 }
 
