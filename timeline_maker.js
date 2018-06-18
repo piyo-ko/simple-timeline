@@ -128,8 +128,9 @@ window.top.onload = function () {
   sel.selectedIndex = 0;
   m.reset();
 
-  PERIOD_SELECTORS.add(m.period_to_re_label, m.period_to_remove,
-    m.period_including_this_event);
+  PERIOD_SELECTORS.add(m.period_to_re_label);
+  PERIOD_SELECTORS.add(m.period_to_remove);
+  PERIOD_SELECTORS.add(m.period_including_this_event);
 
 /*
   EVENT_SELECTORS.add(m.   );
