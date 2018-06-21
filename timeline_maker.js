@@ -947,24 +947,35 @@ function set_read_values() {
 
   // (4) 各期間の確認。
   const timeline_body_elt = document.getElementById('timeline_body'),
-    period_g_elts = timeline_body_elt.getElementsByTagName('g'), 
+    period_g_elts = timeline_body_elt.children,
     p_num = period_g_elts.length;
   if (p_num > 0) { TIMELINE_DATA.init_state = false; }
   let next_period_id = 0;
 
-  for (let i = 0; i < p_num; i++) { // 期間を一つずつ見てゆく。
-    const cur_g = period_g_elts[i], cur_gid = cur_g.getAttribute('id');
-    let m = cur_gid.match(/^p_(\d+)g$/);
-    if (m === null || m.length !== 2) {
-      const msg = {ja: m[0] + 'は不正な期間IDです', 
-                   en: m[0] + ' is an illegal period ID.'};
+  // ループの中で continue と return を使いたいので、forEach ではなく for を使う。
+  for (let i = 0; i < p_num; i++) {
+    const cur_g = period_g_elts[i];
+    if (cur_g.tagName !== 'g' && cur_g.tagName !== 'G') {
+      console.log(cur_g.tagName + ' element: skipped');
+      continue;
+    }
+    const pid_m = cur_g.getAttribute('id').match(/^p_(\d+)g$/);
+    if (pid_m === null || pid_m.length !== 2) {
+      const msg = {ja: pid_m[0] + 'は不正な期間IDです', 
+                   en: pid_m[0] + ' is an illegal period ID.'};
       alert(msg[LANG]);  reset_svg();  return;
     }
 
-    const id_num = parseInt(m[1]), // ID の数字部分を取り出す。
-       cur_pid = 'p_' + id_num,
+    const pid_num = parseInt(pid_m[1]), // ID の数字部分を取り出す。
+       cur_pid = 'p_' + pid_num,
        cur_p = document.getElementById(cur_pid); // rect 要素
-    if (next_period_id <= id_num) { next_period_id = id_num + 1; }
+    //console.log(cur_pid + ' (' + pid_num + ')');
+    if (next_period_id <= pid_num) { next_period_id = pid_num + 1; }
+    if (cur_p === null) {
+       const msg = {ja: '期間 ' + cur_pid + ' を表す矩形が見つかりません',
+                    en: 'No rectangle for period ' + cur_pid + ' is found.'};
+       alert(msg[LANG]);  reset_svg();  return;
+    }
 
     const x = parseInt(cur_p.getAttribute('x')),
       y = parseInt(cur_p.getAttribute('y')),
@@ -972,25 +983,28 @@ function set_read_values() {
       fill = cur_p.getAttribute('fill'),
       r = rect_y_to_row_num(y),
       start_year = x_to_year(x),
-      end_year = start_year + (w / CONFIG.year_to_px_factor) - 1;
-    m = fill.match(/^url\(#([a-zA-Z_]\w*)_(closed|open)_(closed|open)\)$/);
-    if  (m === null || m.length !== 4) {
-      const msg = {ja: m[0] + ' は不正な配色テーマ指定です',
-                   en: 'The color theme is incorrectly specified as ' + m[0] + '.'};
+      end_year = start_year + (w / CONFIG.year_to_px_factor) - 1,
+      fill_m = fill.match(/^url\(#([a-zA-Z_]\w*)_(closed|open)_(closed|open)\)$/);
+    if  (fill_m === null || fill_m.length !== 4) {
+      const msg = {ja: fill_m[0] + ' は不正な配色テーマ指定です',
+                   en: 'The color theme is incorrectly specified as ' + fill_m[0] + '.'};
       alert(msg[LANG]);  reset_svg();  return;
     }
-    const color_theme = m[1] + '_' + m[2] + '_' + m[3];
-    //console.log(`id_num=${id_num}, x=${x}, y=${y}, w=${w}, color_theme=${color_theme}, r=${r}, start_year=${start_year}, end_year=${end_year}`);
+    const color_theme = fill_m[1] + '_' + fill_m[2] + '_' + fill_m[3];
+    //console.log(`pid_num=${pid_num}, x=${x}, y=${y}, w=${w}, color_theme=${color_theme}, r=${r}, start_year=${start_year}, end_year=${end_year}`);
 
     const p_dat = new period_data(start_year, end_year, r, m[1], color_theme);
     TIMELINE_DATA.periods.set(cur_pid, p_dat);
     // この期間に相当する選択肢をセレクタに追加
+    const period_label_txt = 
+      document.getElementById(cur_pid + '_label').textContent;
     PERIOD_SELECTORS.forEach(sel => {
-      const label_txt = document.getElementById(cur_pid + '_label').textContent;
-      add_selector_option(sel, cur_pid, label_txt);
+      add_selector_option(sel, cur_pid, period_label_txt);
     });
   }
+
   // 期間の ID 用に使用済みの番号のうちの最大値よりも 1 だけ大きい値
+  // (または、期間が一つも定義されていなかった場合は、0)
   TIMELINE_DATA.next_period_id = next_period_id;
 
   // (5) 縦の目盛線と横罫線を再描画する (妥当性を確認するよりも強制的に再描画
