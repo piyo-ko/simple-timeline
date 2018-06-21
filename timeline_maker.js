@@ -139,6 +139,18 @@ window.top.onload = function () {
   return(true);
 }
 
+/* 年から、その年の開始位置に相当する x 座標への変換 */
+function year_to_x(year) {
+  return((year - TIMELINE_DATA.min_year + CONFIG.h_margin_in_year)
+           * CONFIG.year_to_px_factor);
+}
+
+/* x 座標から年への変換 (x 座標が年の開始位置に相当するものと見なしている) */
+function x_to_year(x) {
+  return(x / CONFIG.year_to_px_factor
+           + TIMELINE_DATA.min_year - CONFIG.h_margin_in_year);
+}
+
 /* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
   resize_svg(0, 0);
@@ -372,8 +384,7 @@ function add_period() {
                         (which_row - 1) * CONFIG.row_height;
 
   const rect = document.createElementNS(SVG_NS, 'rect'),
-    rect_x = (CONFIG.h_margin_in_year + (start_year - TIMELINE_DATA.min_year))
-               * CONFIG.year_to_px_factor,
+    rect_x = year_to_x(start_year),
     rect_y = row_start_y + CONFIG.v_margin_within_row + CONFIG.font_size,
     left_end_open = ((start_year_type === 'dummy') ? true : false),
     right_end_open = ((end_year_type === 'dummy') ? true : false),
@@ -489,8 +500,7 @@ function update_v_bars() {
   for (let year = min_y; year <= max_y; 
            year += CONFIG.vertical_bar_interval_in_year) {
     // year 年の目盛に対応する x 座標と、この目盛用のテキスト要素の幅。
-    const x = (year - TIMELINE_DATA.min_year + CONFIG.h_margin_in_year) *
-                CONFIG.year_to_px_factor,
+    const x = year_to_x(year),
         txt_span = year.toString().length * CONFIG.monospace_char_width;
     if (TIMELINE_DATA.v_bars.has(year)) { // year 年の縦線が存在する場合。
       const v = document.getElementById('v_bar_' + year),
@@ -774,8 +784,7 @@ function add_event() {
   g.appendChild(e_title);  add_text_node(g, '\n');
 
   const e_circle = document.createElementNS(SVG_NS, 'circle'),
-    cx = (CONFIG.h_margin_in_year + (event_year - TIMELINE_DATA.min_year) + 0.5)
-           * CONFIG.year_to_px_factor,
+    cx = year_to_x(event_year + 0.5),
     cy = CONFIG.header_row_height + (p_dat.row - 1) * CONFIG.row_height +
          CONFIG.v_margin_within_row + CONFIG.font_size + CONFIG.bar_height / 2,
     circle_attr = [['id', new_eid],  ['class', p_dat.base_color_theme],
@@ -934,8 +943,7 @@ function set_read_values() {
       fill = cur_p.getAttribute('fill'),
       row_start_y = y - CONFIG.v_margin_within_row - CONFIG.font_size,
       r = (row_start_y - CONFIG.header_row_height) / CONFIG.row_height + 1,
-      start_year = x / CONFIG.year_to_px_factor
-                    + TIMELINE_DATA.min_year - CONFIG.h_margin_in_year,
+      start_year = x_to_year(x),
       end_year = start_year + (w / CONFIG.year_to_px_factor) - 1;
     m = fill.match(/^url\(#([a-zA-Z_]\w*)_(closed|open)_(closed|open)\)$/);
     if  (m === null || m.length !== 4) {
