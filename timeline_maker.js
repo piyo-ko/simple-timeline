@@ -151,6 +151,40 @@ function x_to_year(x) {
            + TIMELINE_DATA.min_year - CONFIG.h_margin_in_year);
 }
 
+/* 行番号から、その行の上端の y 座標への変換 */
+function row_num_to_row_start_y(row) {
+  return(CONFIG.header_row_height + (row - 1) * CONFIG.row_height);
+}
+/* 行番号から、その行に配置される rect 要素 (期間を表す) の y 属性の値への
+変換 */
+function row_num_to_rect_y(row) {
+  return(row_num_to_row_start_y(row) + 
+         CONFIG.v_margin_within_row + CONFIG.font_size);
+}
+/* 行番号から、その行に配置される期間の開始年・終了年の text 要素 の y 属性の
+値への変換 */
+function row_num_to_year_txt_y(row) {
+  return(row_num_to_row_start_y(row) + CONFIG.v_margin_within_row);
+}
+/* 行番号から、その行に配置される期間についての説明ラベルの text 要素 の 
+y 属性の値への変換 */
+function row_num_to_label_txt_y(row) {
+  return(row_num_to_row_start_y(row) + CONFIG.v_margin_within_row + 
+         CONFIG.font_size + CONFIG.bar_height);
+}
+/* 行番号から、その行に配置される期間内の出来事を表す circle 要素の cy 属性の
+値への変換 */
+function row_num_to_cy(row) {
+  return(row_num_to_row_start_y(row) + CONFIG.v_margin_within_row + 
+         CONFIG.font_size + CONFIG.bar_height / 2);
+}
+/* rect 要素の y 属性 (上辺の y 座標) の値から、その rect 要素 (期間を表す) が
+配置されている行の番号への変換 */
+function rect_y_to_row_num(y) {
+  const row_start_y = y - CONFIG.v_margin_within_row - CONFIG.font_size;
+  return((row_start_y - CONFIG.header_row_height) / CONFIG.row_height + 1);
+}
+
 /* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
   resize_svg(0, 0);
@@ -380,12 +414,9 @@ function add_period() {
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('id', new_pid + 'g');
 
-  const row_start_y = CONFIG.header_row_height + 
-                        (which_row - 1) * CONFIG.row_height;
-
   const rect = document.createElementNS(SVG_NS, 'rect'),
     rect_x = year_to_x(start_year),
-    rect_y = row_start_y + CONFIG.v_margin_within_row + CONFIG.font_size,
+    rect_y = row_num_to_rect_y(which_row),
     left_end_open = ((start_year_type === 'dummy') ? true : false),
     right_end_open = ((end_year_type === 'dummy') ? true : false),
     gradient_type = (left_end_open ?
@@ -403,7 +434,7 @@ function add_period() {
       start_attr = [['id', new_pid + '_start_year'],
         ['class', 'year ' + color_theme],
         ['x', rect_x],
-        ['y', row_start_y + CONFIG.v_margin_within_row],
+        ['y', row_num_to_year_txt_y(which_row)],
         ['dx', 0], ['dy', CONFIG.font_size]];
     start_attr.forEach(k_v => { start_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(start_txt, start_year);
@@ -416,7 +447,7 @@ function add_period() {
       end_attr = [['id', new_pid + '_end_year'],
         ['class', 'year ' + color_theme],
         ['x', end_txt_x],
-        ['y', row_start_y + CONFIG.v_margin_within_row],
+        ['y', row_num_to_year_txt_y(which_row)],
         ['dx', 0], ['dy', CONFIG.font_size]];
     end_attr.forEach(k_v => { end_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(end_txt, end_year);
@@ -426,8 +457,7 @@ function add_period() {
     label_attr = [['id', new_pid + '_label'],
       ['class', 'label ' + color_theme],
       ['x', rect_x],
-      ['y', row_start_y + CONFIG.v_margin_within_row + 
-            CONFIG.font_size + CONFIG.bar_height],
+      ['y', row_num_to_label_txt_y(which_row)],
       ['dx', 0], ['dy', CONFIG.font_size]];
   label_attr.forEach(k_v => { label_txt.setAttribute(k_v[0], k_v[1]); });
   add_text_node(label_txt, period_label);
@@ -785,8 +815,7 @@ function add_event() {
 
   const e_circle = document.createElementNS(SVG_NS, 'circle'),
     cx = year_to_x(event_year + 0.5),
-    cy = CONFIG.header_row_height + (p_dat.row - 1) * CONFIG.row_height +
-         CONFIG.v_margin_within_row + CONFIG.font_size + CONFIG.bar_height / 2,
+    cy = row_num_to_cy(p_dat.row),
     circle_attr = [['id', new_eid],  ['class', p_dat.base_color_theme],
                    ['cx', cx], ['cy', cy], ['r', CONFIG.circle_radius]];
   circle_attr.forEach(k_v => { e_circle.setAttribute(k_v[0], k_v[1]); });
@@ -941,8 +970,7 @@ function set_read_values() {
       y = parseInt(cur_p.getAttribute('y')),
       w = parseInt(cur_p.getAttribute('width')),
       fill = cur_p.getAttribute('fill'),
-      row_start_y = y - CONFIG.v_margin_within_row - CONFIG.font_size,
-      r = (row_start_y - CONFIG.header_row_height) / CONFIG.row_height + 1,
+      r = rect_y_to_row_num(y),
       start_year = x_to_year(x),
       end_year = start_year + (w / CONFIG.year_to_px_factor) - 1;
     m = fill.match(/^url\(#([a-zA-Z_]\w*)_(closed|open)_(closed|open)\)$/);
