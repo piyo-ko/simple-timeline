@@ -5,7 +5,8 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 /* ページの言語。日本語がデフォルト。英語 (en) のページも後で作る。 */
 let LANG = 'ja';
 
-/* 入力フォーム中の期間・出来事を表すセレクタを要素とする配列。 */
+/* 入力フォーム中の期間・出来事を表すセレクタを要素とする配列。
+実際の中身は、window.top.onload で設定する。 */
 const PERIOD_SELECTORS = new Set(), EVENT_SELECTORS = new Set();
 
 /* 各期間について管理するためのオブジェクト */
@@ -131,10 +132,8 @@ window.top.onload = function () {
   PERIOD_SELECTORS.add(m.period_to_re_label);
   PERIOD_SELECTORS.add(m.period_to_remove);
   PERIOD_SELECTORS.add(m.period_including_this_event);
+  EVENT_SELECTORS.add(m.event_to_remove);
 
-/*
-  EVENT_SELECTORS.add(m.   );
-*/
   reset_svg();
   return(true);
 }
@@ -832,6 +831,16 @@ function add_event() {
   EVENT_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_eid, event_label);
   });
+}
+
+/* 「出来事を削除」メニュー。 */
+function remove_event() {
+  const eid = selected_choice(document.menu.event_to_remove),
+    g = document.getElementById(eid + 'g');
+  remove_all_children(g);
+  g.parentNode.removeChild(g);
+  EVENT_SELECTORS.forEach(sel => { remove_choice(sel, eid); });
+  TIMELINE_DATA.events.delete(eid);
 }
 
 /* 「ダウンロードする」メニュー。 */
