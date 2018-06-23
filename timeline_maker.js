@@ -956,7 +956,6 @@ function set_read_values() {
   for (let i = 0; i < p_num; i++) {
     const cur_g = period_g_elts[i];
     if (cur_g.tagName !== 'g' && cur_g.tagName !== 'G') {
-      console.log(cur_g.tagName + ' element: skipped');
       continue;
     }
     const pid_m = cur_g.getAttribute('id').match(/^p_(\d+)g$/);
@@ -969,7 +968,6 @@ function set_read_values() {
     const pid_num = parseInt(pid_m[1]), // ID の数字部分を取り出す。
        cur_pid = 'p_' + pid_num,
        cur_p = document.getElementById(cur_pid); // rect 要素
-    //console.log(cur_pid + ' (' + pid_num + ')');
     if (next_period_id <= pid_num) { next_period_id = pid_num + 1; }
     if (cur_p === null) {
        const msg = {ja: '期間 ' + cur_pid + ' を表す矩形が見つかりません',
@@ -991,8 +989,6 @@ function set_read_values() {
       alert(msg[LANG]);  reset_svg();  return;
     }
     const color_theme = fill_m[1] + '_' + fill_m[2] + '_' + fill_m[3];
-    //console.log(`pid_num=${pid_num}, x=${x}, y=${y}, w=${w}, color_theme=${color_theme}, r=${r}, start_year=${start_year}, end_year=${end_year}`);
-
     const p_dat = new period_data(start_year, end_year, r, fill_m[1], color_theme);
     TIMELINE_DATA.periods.set(cur_pid, p_dat);
     // この期間に相当する選択肢をセレクタに追加
@@ -1010,7 +1006,6 @@ function set_read_values() {
     for (let j = 0; j < e_num; j++) {
       const cur_ev = event_node_candidates[j];
       if (cur_ev.tagName !== 'g' && cur_ev.tagName !== 'G') {
-        //console.log(cur_ev.tagName + ' element: skipped');
         continue;
       }
       const eid_m = cur_ev.getAttribute('id').match(/^e_(\d+)g$/);
