@@ -382,6 +382,7 @@ function add_period() {
         ['x1', 0], ['y1', CONFIG.header_row_height],
         ['x2', TIMELINE_DATA.svg_width], ['y2', CONFIG.header_row_height]];
     h_rule_attr.forEach(k_v => { h_rule.setAttribute(k_v[0], k_v[1]); });
+    add_text_node(header_g_elt, '\n');
     header_g_elt.appendChild(h_rule);  add_text_node(header_g_elt, '\n');
 
     add_selector_option(m.which_row, '2', '2行目');
@@ -426,7 +427,7 @@ function add_period() {
       ['width', rect_w], ['height', CONFIG.bar_height],
       ['fill', 'url(#' + gradient_def_name + ')']];
   rect_attr.forEach(k_v => { rect.setAttribute(k_v[0], k_v[1]); });
-  g.appendChild(rect);  add_text_node(g, '\n');
+    add_text_node(g, '\n');  g.appendChild(rect);  add_text_node(g, '\n');
 
   if (! left_end_open) {
     const start_txt = document.createElementNS(SVG_NS, 'text'),
@@ -545,7 +546,7 @@ function update_v_bars() {
           ['x1', x], ['y1', CONFIG.txt_region_in_header_row],
           ['x2', x], ['y2', y_bottom]];
       v_attr.forEach(k_v => { v.setAttribute(k_v[0], k_v[1]); });
-      header_elt.appendChild(v);
+      header_elt.appendChild(v);  add_text_node(header_elt, '\n');
 
       const v_txt = document.createElementNS(SVG_NS, 'text'),
         txt_attr = [['id', 'v_bar_txt_' + year], ['class', 'year v_bar'],
@@ -553,7 +554,7 @@ function update_v_bars() {
           ['x', x - txt_span/2], ['y', 0], ['dx', 0], ['dy', CONFIG.font_size]];
       add_text_node(v_txt, year);
       txt_attr.forEach(k_v => { v_txt.setAttribute(k_v[0], k_v[1]); });
-      header_elt.appendChild(v_txt);
+      header_elt.appendChild(v_txt);  add_text_node(header_elt, '\n');
 
       TIMELINE_DATA.v_bars.add(year);
     }
