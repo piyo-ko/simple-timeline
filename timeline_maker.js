@@ -945,12 +945,12 @@ function set_read_values() {
     grad_elt = document.getElementById('gradient_def');
   // *** TO DO *** あとで実装する
 
-  // (4) 各期間の確認。
+  // (4) 各期間の確認と、(5) 出来事の確認。
   const timeline_body_elt = document.getElementById('timeline_body'),
     period_g_elts = timeline_body_elt.children,
     p_num = period_g_elts.length;
   if (p_num > 0) { TIMELINE_DATA.init_state = false; }
-  let next_period_id = 0;
+  let next_period_id = 0, next_event_id = 0;
 
   // ループの中で continue と return を使いたいので、forEach ではなく for を使う。
   for (let i = 0; i < p_num; i++) {
@@ -1001,18 +1001,67 @@ function set_read_values() {
     PERIOD_SELECTORS.forEach(sel => {
       add_selector_option(sel, cur_pid, period_label_txt);
     });
+
+    // (5) 出来事の確認。
+    const event_node_candidates = cur_g.children, 
+      e_num = event_node_candidates.length,
+      rect_mid_y = y + parseInt(CONFIG.bar_height / 2);
+    // continue と return を使いたいので、forEach ではなく for を使う。
+    for (let j = 0; j < e_num; j++) {
+      const cur_ev = event_node_candidates[j];
+      if (cur_ev.tagName !== 'g' && cur_ev.tagName !== 'G') {
+        //console.log(cur_ev.tagName + ' element: skipped');
+        continue;
+      }
+      const eid_m = cur_ev.getAttribute('id').match(/^e_(\d+)g$/);
+      if (eid_m === null || eid_m.length !== 2) {
+        const msg = {ja: eid_m[0] + 'は不正な出来事IDです', 
+                     en: eid_m[0] + ' is an illegal event ID.'};
+        alert(msg[LANG]);  reset_svg();  return;
+      }
+      const eid_num = parseInt(eid_m[1]), cur_eid = 'e_' + eid_num,
+        cur_e = document.getElementById(cur_eid); // circle 要素
+      if (next_event_id <= eid_num) { next_event_id = eid_num + 1; }
+      if (cur_e === null) {
+        const msg = {ja: '出来事 ' + cur_eid + ' を表す円が見つかりません',
+                      en: 'No circle for event ' + cur_eid + ' is found.'};
+         alert(msg[LANG]);  reset_svg();  return;
+      }
+      const cx = parseInt(cur_e.getAttribute('cx')),
+        cy = parseInt(cur_e.getAttribute('cy')),
+        event_year = x_to_year(cx);
+      if (cy !== rect_mid_y) {
+        const msg = {ja: '期間 ' + cur_pid + ' と出来事 ' + cur_eid + 
+                         ' の位置がずれています',
+                     en: 'Period ' + cur_pid + ' and event ' + cur_eid + 
+                         ' must be aligned.'}
+        alert(msg[LANG]);  reset_svg();  return;
+      }
+      if (cx < x || x + w < cx) { // 厳密な条件ではないが、とりあえず。
+        const msg = {ja: '出来事 ' + cur_eid + ' が期間 ' + cur_pid + 
+                         ' の外にあります',
+                     en: 'Event ' + cur_eid + 
+                         ' must be included within period ' + cur_pid + '.'}
+        alert(msg[LANG]);  reset_svg();  return;
+      }
+      const e_dat = new event_data(event_year, cur_eid);
+      TIMELINE_DATA.events.set(cur_eid, e_dat);
+      const event_label_txt = 
+        document.getElementById(cur_eid + '_label').textContent;
+      EVENT_SELECTORS.forEach(sel => {
+        add_selector_option(sel, cur_eid, event_label_txt);
+      });
+    }
   }
 
   // 期間の ID 用に使用済みの番号のうちの最大値よりも 1 だけ大きい値
   // (または、期間が一つも定義されていなかった場合は、0)
   TIMELINE_DATA.next_period_id = next_period_id;
+  // 出来事についても同様。
+  TIMELINE_DATA.next_event_id = next_event_id;
 
-  // (5) 縦の目盛線と横罫線を再描画する (妥当性を確認するよりも強制的に再描画
+  // (6) 縦の目盛線と横罫線を再描画する (妥当性を確認するよりも強制的に再描画
   // する方が楽で確実なので)。
   update_v_bars();
-
-
-  // (6) 出来事の確認。
-  // *** TO DO: 出来事を一つずつ見てゆく。
 }
 
