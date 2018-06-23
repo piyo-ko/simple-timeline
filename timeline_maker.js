@@ -431,24 +431,26 @@ function add_period() {
 
   if (! left_end_open) {
     const start_txt = document.createElementNS(SVG_NS, 'text'),
+      start_txt_len = (start_year.toString().length) * 
+                      CONFIG.monospace_char_width,
       start_attr = [['id', new_pid + '_start_year'],
         ['class', 'year ' + color_theme],
         ['x', rect_x],
         ['y', row_num_to_year_txt_y(which_row)],
-        ['dx', 0], ['dy', CONFIG.font_size]];
+        ['dx', 0], ['dy', CONFIG.font_size], ['textLength', start_txt_len]];
     start_attr.forEach(k_v => { start_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(start_txt, start_year);
     g.appendChild(start_txt);  add_text_node(g, '\n');
   }
   if (! right_end_open) {
     const end_txt = document.createElementNS(SVG_NS, 'text'),
-      end_txt_x = rect_x + rect_w - 
-        (end_year.toString().length) * CONFIG.monospace_char_width,
+      end_txt_len = (end_year.toString().length) * CONFIG.monospace_char_width,
+      end_txt_x = rect_x + rect_w - end_txt_len,
       end_attr = [['id', new_pid + '_end_year'],
         ['class', 'year ' + color_theme],
         ['x', end_txt_x],
         ['y', row_num_to_year_txt_y(which_row)],
-        ['dx', 0], ['dy', CONFIG.font_size]];
+        ['dx', 0], ['dy', CONFIG.font_size], ['textLength', end_txt_len]];
     end_attr.forEach(k_v => { end_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(end_txt, end_year);
     g.appendChild(end_txt);  add_text_node(g, '\n');
@@ -548,6 +550,7 @@ function update_v_bars() {
 
       const v_txt = document.createElementNS(SVG_NS, 'text'),
         txt_attr = [['id', 'v_bar_txt_' + year], ['class', 'year v_bar'],
+          ['textLength', txt_span],
           ['x', x - txt_span/2], ['y', 0], ['dx', 0], ['dy', CONFIG.font_size]];
       add_text_node(v_txt, year);
       txt_attr.forEach(k_v => { v_txt.setAttribute(k_v[0], k_v[1]); });
