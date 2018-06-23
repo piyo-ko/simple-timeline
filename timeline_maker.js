@@ -993,7 +993,7 @@ function set_read_values() {
     const color_theme = fill_m[1] + '_' + fill_m[2] + '_' + fill_m[3];
     //console.log(`pid_num=${pid_num}, x=${x}, y=${y}, w=${w}, color_theme=${color_theme}, r=${r}, start_year=${start_year}, end_year=${end_year}`);
 
-    const p_dat = new period_data(start_year, end_year, r, m[1], color_theme);
+    const p_dat = new period_data(start_year, end_year, r, fill_m[1], color_theme);
     TIMELINE_DATA.periods.set(cur_pid, p_dat);
     // この期間に相当する選択肢をセレクタに追加
     const period_label_txt = 
