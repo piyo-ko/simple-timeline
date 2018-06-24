@@ -832,92 +832,59 @@ function remove_period() {
     init_v_bars();
     // 配置先の行を選択するセレクタから、最後の選択肢を削除する。
     remove_choice(document.menu.which_row, 2);
-  } else { // 一つ以上の期間が残る場合
-    let need_to_update_v_bars = false;  // update_v_bars() する必要があるか
+    return;
+  }
 
-    // 削除した期間の開始年が年表全体で最も早い年だった場合。
-    if (deleted_dat.start_year === TIMELINE_DATA.min_year) {
-      // 残りの期間の開始年のうちで最も早い年を求める。
-      let new_min_year = CONFIG.max_allowable_year;
-      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
-        if (dat.start_year < new_min_year) { new_min_year = dat.start_year; }
-      });
-      // 年表全体で最も早い年が後ろへ繰り下がる場合、幅を調整する。
-      if (TIMELINE_DATA.min_year < new_min_year) {
-        need_to_update_v_bars = true;
-        put_min_year_forward(new_min_year);
-      }
-    }
+  // ここから先は、一つ以上の期間が残る場合にのみ実行される。
 
-    // 削除した期間の終了年が年表全体で最も遅い年だった場合。
-    if (deleted_dat.end_year === TIMELINE_DATA.max_year) {
-      // 残りの期間の終了年のうちで最も遅い年を求める。
-      let new_max_year = CONFIG.min_allowable_year;
-      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
-        if (new_max_year < dat.end_year) { new_max_year = dat.end_year; }
-      });
-      // 年表全体で最も遅い年が前へ遡る場合、幅を調整する。
-      if (new_max_year < TIMELINE_DATA.max_year) {
-        need_to_update_v_bars = true;
-        put_max_year_backwards(new_max_year);
-      }
-    }
-
-    // 削除した期間が最初の行に配置されていた場合。
-    if (deleted_dat.row === 1) {
-      let found = false;
-      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
-        if (dat.row === 1) { found = true; }
-      });
-      if (! found) { // 最初の行に他の期間がない場合。
-        need_to_update_v_bars = true;
-        // 残っている期間をすべて一つずつ上の行にずらす。
-        TIMELINE_DATA.periods.forEach((dat, pid, m) => {
-          dat.row--;
-          const targets = [pid, pid + '_start_year', pid + '_end_year',
-                           pid + '_label'];
-          targets.forEach(elt_id => {
-            const elt = document.getElementById(elt_id);
-            if (elt !== null) {
-              const y = parseInt(elt.getAttribute('y')) - CONFIG.row_height;
-              elt.setAttribute('y', y);
-            }
-          });
-        });
-        // 配置先の行を選択するセレクタから、最後の選択肢を削除する。
-        remove_choice(document.menu.which_row, TIMELINE_DATA.max_row_num + 1);
-        // 最終行を削除して、年表全体の高さを減らす。
-        TIMELINE_DATA.max_row_num--;
-        TIMELINE_DATA.svg_height -= CONFIG.row_height;
-        resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
-      }
-    }
-
-    // 削除した期間が、(余白行を除く) 最終行に配置されていた場合。
-    if (deleted_dat.row === TIMELINE_DATA.max_row_num) {
-      let found = false;
-      TIMELINE_DATA.periods.forEach((dat, pid, m) => {
-        if (dat.row === TIMELINE_DATA.max_row_num) { found = true; }
-      });
-      if (! found) { // 最終行に他の期間がない場合。
-        need_to_update_v_bars = true;
-        // 配置先の行を選択するセレクタから、最後の選択肢を削除する。
-        remove_choice(document.menu.which_row, deleted_dat.row + 1);
-        // 年表の最終行 (余白行) を削除して、年表全体の高さを減らす
-        // (消した期間があった行が、余白行となる)。
-        TIMELINE_DATA.max_row_num--;
-        TIMELINE_DATA.svg_height -= CONFIG.row_height;
-        resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
-      }
-    }
-
-    if (need_to_update_v_bars) { update_v_bars(); }
-
-    if (MODE.f_remove_period > 0) {
-      TIMELINE_DATA.print();
-      console.log('need_to_update_v_bars=' + need_to_update_v_bars);
+  // 削除した期間の開始年が年表全体で最も早い年だった場合。
+  if (deleted_dat.start_year === TIMELINE_DATA.min_year) {
+    // 残りの期間の開始年のうちで最も早い年を求める。
+    let new_min_year = CONFIG.max_allowable_year;
+    TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+      if (dat.start_year < new_min_year) { new_min_year = dat.start_year; }
+    });
+    // 年表全体で最も早い年が後ろへ繰り下がる場合、幅を調整する。
+    if (TIMELINE_DATA.min_year < new_min_year) {
+      put_min_year_forward(new_min_year);
+      update_v_bars();
     }
   }
+
+  // 削除した期間の終了年が年表全体で最も遅い年だった場合。
+  if (deleted_dat.end_year === TIMELINE_DATA.max_year) {
+    // 残りの期間の終了年のうちで最も遅い年を求める。
+    let new_max_year = CONFIG.min_allowable_year;
+    TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+      if (new_max_year < dat.end_year) { new_max_year = dat.end_year; }
+    });
+    // 年表全体で最も遅い年が前へ遡る場合、幅を調整する。
+    if (new_max_year < TIMELINE_DATA.max_year) {
+      put_max_year_backwards(new_max_year);
+      update_v_bars();
+    }
+  }
+
+  // 削除した期間が最初の行にあり、かつ、最初の行に他の期間がない場合
+  if (deleted_dat.row === 1 && count_periods_in_first_row() === 0) {
+    // 残っている期間 (と、その中の出来事) をすべて一つずつ上の行にずらす。
+    TIMELINE_DATA.periods.forEach((dat, pid, m) => {
+      move_period_and_associated_events_up_or_down(pid, true);
+    });
+    // 最終行を削除して、年表全体の高さを減らす。
+    remove_last_empty_row();
+  }
+
+  // 削除した期間が (余白行を除く) 最終行にあり、かつ、最終行に他の期間が
+  // ない場合
+  if (deleted_dat.row === TIMELINE_DATA.max_row_num &&
+      count_periods_in_last_row() === 0) {
+    // 年表の最終行 (余白行) を削除して、年表全体の高さを減らす (消した期間が
+    // あった行が、今からは余白行となる)。
+    remove_last_empty_row();
+  }
+
+  if (MODE.f_remove_period > 0) { TIMELINE_DATA.print(); }
 }
 
 /* 「出来事を追加」メニュー。 */
