@@ -12,11 +12,8 @@ const PERIOD_SELECTORS = new Set(), EVENT_SELECTORS = new Set();
 /* 各期間について管理するためのオブジェクト */
 class period_data {
   constructor(start_year, end_year, row, base_color_theme, color_theme) {
-    this.start_year = start_year;
-    this.end_year = end_year;
-    this.row = row;
-    this.base_color_theme = base_color_theme;
-    this.color_theme = color_theme;
+    this.start_year = start_year;  this.end_year = end_year;  this.row = row;
+    this.base_color_theme = base_color_theme;  this.color_theme = color_theme;
   }
   print() { console.log(JSON.stringify(this)); }
   is_included(year) {
@@ -33,36 +30,24 @@ class event_data {
 
 /* デバッグ対象の関数に対応するプロパティを 0 以上の値に設定すること。 */
 const MODE = {
-  f_add_period: 0,
-  f_update_v_bars: 0,
-  f_remove_period: 0
+  f_add_period: 0,  f_update_v_bars: 0,  f_remove_period: 0
 };
 
 /* 年表全体の現状を管理する大域オブジェクト。 */
 var TIMELINE_DATA = TIMELINE_DATA || {
-  next_period_id: 0, 
-  next_event_id: 0, 
+  next_period_id: 0,  next_event_id: 0, 
   max_row_num: 0,  // 1 行目は 1 と数える。0 は何も期間がないことを表す。
-  svg_width: 0, 
-  svg_height: 0,
+  svg_width: 0,  svg_height: 0,
   init_state: true,
-  periods: new Map(),
-  events: new Map(), 
-  v_bars: new Set(),
-  min_year: 9999,     // 初期値
-  max_year: -9999,    // 初期値
+  periods: new Map(),  events: new Map(),  v_bars: new Set(),
+  min_year: 9999,  max_year: -9999,    // 初期値
   reset_all: function () {
-    this.next_period_id = 0;
-    this.next_event_id = 0;
-    this.max_row_num = 0;
-    this.svg_width = 0;
-    this.svg_height = 0;
+    this.next_period_id = 0;  this.next_event_id = 0;  this.max_row_num = 0;
+    this.svg_width = 0;  this.svg_height = 0;
     this.init_state = true;
-    this.periods = new Map();
-    this.events = new Map();
+    this.periods = new Map();  this.events = new Map();
     this.v_bars = new Set();
-    this.min_year = 9999;
-    this.max_year = -9999;
+    this.min_year = 9999;  this.max_year = -9999;
   },
   print: function() {
     console.log('TIMELINE_DATA is:\n' + JSON.stringify(this) + '\n');
@@ -84,8 +69,7 @@ var TIMELINE_DATA = TIMELINE_DATA || {
 /* 各種定数 */
 const CONFIG = {
   // 年の許容範囲
-  min_allowable_year: -9999,
-  max_allowable_year: 9999,
+  min_allowable_year: -9999,  max_allowable_year: 9999,
   // ヘッダ行の高さ
   header_row_height: 40,
   // そのうち文字用の部分の高さ (マージンを含む)
@@ -129,10 +113,9 @@ window.top.onload = function () {
   sel.selectedIndex = 0;
   m.reset();
 
-  PERIOD_SELECTORS.add(m.period_to_re_label);
-  PERIOD_SELECTORS.add(m.period_to_move);
-  PERIOD_SELECTORS.add(m.period_to_remove);
-  PERIOD_SELECTORS.add(m.period_including_this_event);
+  [m.period_to_re_label, m.period_to_move, m.period_to_remove, 
+   m.period_including_this_event]
+   .forEach(sel => { PERIOD_SELECTORS.add(sel); });
   EVENT_SELECTORS.add(m.event_to_remove);
 
   reset_svg();
@@ -188,11 +171,8 @@ function rect_y_to_row_num(y) {
 /* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
   resize_svg(0, 0);
-  document.getElementById('theme_style_def').innerHTML = '';
-  document.getElementById('gradient_def').innerHTML = '';
-  document.getElementById('header_and_v_bars').innerHTML = '';
-  document.getElementById('timeline_body').innerHTML = '';
-
+  ['theme_style_def', 'gradient_def', 'header_and_v_bars', 'timeline_body']
+    .forEach(id => { document.getElementById(id).innerHTML = ''; });
   set_theme_defs();
 }
 
@@ -207,8 +187,7 @@ function resize_svg(w, h) {
 反映させ、配色テーマ用のセレクタに選択肢を追加する。 */
 function set_theme_defs() {
   if (! check_theme_ids()) {
-    alert('Error in themes.js.\nPlease correct themes.js.');
-    return(false);
+    alert('Error in themes.js.\nPlease correct themes.js.');  return(false);
   }
 
   const style_elt = document.getElementById('theme_style_def');
@@ -428,7 +407,7 @@ function add_period() {
       ['width', rect_w], ['height', CONFIG.bar_height],
       ['fill', 'url(#' + gradient_def_name + ')']];
   rect_attr.forEach(k_v => { rect.setAttribute(k_v[0], k_v[1]); });
-    add_text_node(g, '\n');  g.appendChild(rect);  add_text_node(g, '\n');
+  add_text_node(g, '\n');  g.appendChild(rect);  add_text_node(g, '\n');
 
   if (! left_end_open) {
     const start_txt = document.createElementNS(SVG_NS, 'text'),
@@ -436,8 +415,7 @@ function add_period() {
                       CONFIG.monospace_char_width,
       start_attr = [['id', new_pid + '_start_year'],
         ['class', 'year ' + color_theme],
-        ['x', rect_x],
-        ['y', row_num_to_year_txt_y(which_row)],
+        ['x', rect_x], ['y', row_num_to_year_txt_y(which_row)],
         ['dx', 0], ['dy', CONFIG.font_size], ['textLength', start_txt_len]];
     start_attr.forEach(k_v => { start_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(start_txt, start_year);
@@ -449,8 +427,7 @@ function add_period() {
       end_txt_x = rect_x + rect_w - end_txt_len,
       end_attr = [['id', new_pid + '_end_year'],
         ['class', 'year ' + color_theme],
-        ['x', end_txt_x],
-        ['y', row_num_to_year_txt_y(which_row)],
+        ['x', end_txt_x], ['y', row_num_to_year_txt_y(which_row)],
         ['dx', 0], ['dy', CONFIG.font_size], ['textLength', end_txt_len]];
     end_attr.forEach(k_v => { end_txt.setAttribute(k_v[0], k_v[1]); });
     add_text_node(end_txt, end_year);
@@ -459,8 +436,7 @@ function add_period() {
   const label_txt = document.createElementNS(SVG_NS, 'text'),
     label_attr = [['id', new_pid + '_label'],
       ['class', 'label ' + color_theme],
-      ['x', rect_x],
-      ['y', row_num_to_label_txt_y(which_row)],
+      ['x', rect_x], ['y', row_num_to_label_txt_y(which_row)],
       ['dx', 0], ['dy', CONFIG.font_size]];
   label_attr.forEach(k_v => { label_txt.setAttribute(k_v[0], k_v[1]); });
   add_text_node(label_txt, period_label);
@@ -471,8 +447,7 @@ function add_period() {
   const p_dat = new period_data(start_year, end_year, which_row, color_theme, gradient_def_name);
   TIMELINE_DATA.periods.set(new_pid, p_dat);
   if (MODE.f_add_period > 0) {
-    console.log('add_period():');
-    TIMELINE_DATA.print();
+    console.log('add_period():');  TIMELINE_DATA.print();
   }
   PERIOD_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_pid, period_label);
@@ -737,11 +712,9 @@ function remove_last_empty_row() {
 他の関数から呼び出すためのもの。移動先の行が存在することの保証は、呼び出し側で
 行うこと。また、移動の結果 (空行の発生など) にも呼び出し側で対処すること。 */
 function move_period_and_associated_events_up_or_down(pid, move_up) {
-  const row_num_diff = move_up ? -1: 1,
-    y_diff = row_num_diff * CONFIG.row_height;
-
+  const row_num_diff = move_up ? -1: 1;
   TIMELINE_DATA.periods.get(pid).row += row_num_diff;
-  move_period_and_associated_events(pid, 0, y_diff);
+  move_period_and_associated_events(pid, 0, row_num_diff * CONFIG.row_height);
 }
 
 /* ID が pid の期間と、その期間に関連づけられている出来事がもしあればそれらの
@@ -754,21 +727,20 @@ function move_period_and_associated_events(pid, dx, dy) {
   targets.forEach(elt_id => { move_svg_elt(elt_id, dx, dy); });
 
   // この期間に関連づけられた出来事が、0 個以上の任意の個数、存在しうる。
-  let cur_elt = document.getElementById(pid + 'g').firstChild;
-  while (cur_elt !== null) {
+  
+  for (let cur_elt = document.getElementById(pid + 'g').firstChild;
+       cur_elt !== null; cur_elt = cur_elt.nextSibling) {
     if (cur_elt.nodeName === 'g') { // 出来事を表す g 要素
       // この g 要素の中の circle 要素を y 方向において y_diff だけ移動させる。
       // なお、g 要素は title 要素と circle 要素を一つずつ子要素として含むだけ。
-      let cur_ev_elt = cur_elt.firstChild;
-      while (cur_ev_elt !== null) {
+      for (let cur_ev_elt = cur_elt.firstChild;
+           cur_ev_elt !== null; cur_ev_elt = cur_ev_elt.nextSibling) {
         if (cur_ev_elt.nodeName == 'circle') {
           move_svg_elt(cur_ev_elt.id, dx, dy, true); break;
-        } else { // 改行文字コードの文字要素または title 要素
-          cur_ev_elt = cur_ev_elt.nextSibling;
         }
+        // 改行文字コードの文字要素または title 要素は、無視する。
       }
     }
-    cur_elt = cur_elt.nextSibling;
   }
 }
 
@@ -793,8 +765,7 @@ function count_periods_in_last_row() {
 /* 「期間を削除」メニュー。 */
 function remove_period() {
   if (MODE.f_remove_period > 0) {
-    console.log('in remove_period:');
-    TIMELINE_DATA.print();
+    console.log('in remove_period:');  TIMELINE_DATA.print();
   }
   const pid = selected_choice(document.menu.period_to_remove),
     g = document.getElementById(pid + 'g');
@@ -925,8 +896,7 @@ function add_event() {
   g.appendChild(e_title);  add_text_node(g, '\n');
 
   const e_circle = document.createElementNS(SVG_NS, 'circle'),
-    cx = year_to_x(event_year + 0.5),
-    cy = row_num_to_cy(p_dat.row),
+    cx = year_to_x(event_year + 0.5), cy = row_num_to_cy(p_dat.row),
     circle_attr = [['id', new_eid],  ['class', p_dat.base_color_theme],
                    ['cx', cx], ['cy', cy], ['r', CONFIG.circle_radius]];
   circle_attr.forEach(k_v => { e_circle.setAttribute(k_v[0], k_v[1]); });
