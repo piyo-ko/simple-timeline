@@ -130,6 +130,7 @@ window.top.onload = function () {
   m.reset();
 
   PERIOD_SELECTORS.add(m.period_to_re_label);
+  PERIOD_SELECTORS.add(m.period_to_move);
   PERIOD_SELECTORS.add(m.period_to_remove);
   PERIOD_SELECTORS.add(m.period_including_this_event);
   EVENT_SELECTORS.add(m.event_to_remove);
@@ -662,6 +663,122 @@ function modify_period_label() {
   PERIOD_SELECTORS.forEach(sel => {
     rename_choice(sel, pid, new_period_label);
   });
+}
+
+/* 「期間の配置を変更」メニュー。 */
+function move_period() {
+  const pid = selected_choice(document.menu.period_to_move),
+    up_or_down = selected_radio_choice(document.menu.which_direction),
+    g = document.getElementById(pid + 'g'),
+    p_dat = TIMELINE_DATA.periods.get(pid);
+
+  if (p_dat.row === 1 && up_or_down === 'upwards') {
+    const msg = {ja: '一番上にあるので上には動かせません',
+                 en: 'Cannot move the uppermost period upwards.'};
+    alert(msg[LANG]);  return;
+  }
+
+  // 一番下の行にある期間を下へ移動することは許可する。
+  if (p_dat.row === TIMELINE_DATA.max_row_num && up_or_down === 'downwards') {
+    // この場合、年表全体の下への拡大を伴う。
+    TIMELINE_DATA.max_row_num++;
+    TIMELINE_DATA.svg_height += CONFIG.row_height;
+    resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+    update_v_bars();
+    // 配置先の行の選択肢も増やす。
+    const n = TIMELINE_DATA.max_row_num + 1;
+    add_selector_option(document.menu.which_row, n, n + '行目');
+  }
+
+  // 一番上の行にある期間を下へ移動する場合、その移動によって一番上の行が
+  // 空になる可能性がある。
+  if (p_dat.row === 1 && up_or_down === 'downwards' &&
+      count_periods_in_first_row() === 1) {
+    // 空行のまま放置するか、remove_period でのように全体を上にずらすか、
+    // 両者を選択可能とするべきか、考えどころかもしれない。が、とりあえずは、
+    // 一貫性を重視して全体を上にずらすことにする。
+    TIMELINE_DATA.periods.forEach((cur_p_dat, cur_pid, m) => {
+      move_period_and_associated_events_up_or_down(cur_pid, true);
+    });
+    // ずらした結果、今度は一番下の行が余るから、それを消す。
+    remove_last_empty_row();
+  }
+
+  // 一番下の行にある期間を上へ移動する場合、その移動によって一番下の行が
+  // 空になる可能性がある。その場合、最後の空行を削除する。
+  if (p_dat.row === TIMELINE_DATA.max_row_num && up_or_down === 'upwards' &&
+      count_periods_in_last_row() === 1) {
+    remove_last_empty_row();
+  }
+
+  // 移動対象として指定された期間 (と、その中の出来事) を、上または下に動かす。
+  move_period_and_associated_events_up_or_down(pid, (up_or_down === 'upwards'));
+}
+
+/* 最終行を削除して、年表全体の高さを減らす。配置先の行の選択肢の削除も行う。
+他の関数から呼び出すためのもの。最終行が空行になると確認できた状態で呼び出す
+こと。 */
+function remove_last_empty_row() {
+  // 配置先の行の選択肢のうち、最後のものを削除する。
+  remove_choice(document.menu.which_row, TIMELINE_DATA.max_row_num + 1);
+  // 最終行を削除して、年表全体の高さを減らす。
+  TIMELINE_DATA.max_row_num--;
+  TIMELINE_DATA.svg_height -= CONFIG.row_height;
+  resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
+  update_v_bars();
+}
+
+/* ID が pid の期間と、その期間に関連づけられている出来事がもしあればそれらの
+出来事とを、上 (move_up が true の場合) または下 (move_up が false の場合) に
+一行分、移動する。
+他の関数から呼び出すためのもの。移動先の行が存在することの保証は、呼び出し側で
+行うこと。また、移動の結果 (空行の発生など) にも呼び出し側で対処すること。 */
+function move_period_and_associated_events_up_or_down(pid, move_up) {
+  const row_num_diff = move_up ? -1: 1,
+    y_diff = row_num_diff * CONFIG.row_height;
+
+  TIMELINE_DATA.periods.get(pid).row += row_num_diff;
+
+  // 開始年・終了年・ラベルを表す text 要素と、期間を表す rect 要素を
+  // y 方向において y_diff だけ移動させる。
+  const targets = [pid, pid + '_start_year', pid + '_end_year', pid + '_label'];
+  targets.forEach(elt_id => { move_svg_elt(elt_id, 0, y_diff); });
+
+  // この期間に関連づけられた出来事が、0 個以上の任意の個数、存在しうる。
+  let cur_elt = document.getElementById(pid + 'g').firstChild;
+  while (cur_elt !== null) {
+    if (cur_elt.nodeName === 'g') { // 出来事を表す g 要素
+      // この g 要素の中の circle 要素を y 方向において y_diff だけ移動させる。
+      // なお、g 要素は title 要素と circle 要素を一つずつ子要素として含むだけ。
+      let cur_ev_elt = cur_elt.firstChild;
+      while (cur_ev_elt !== null) {
+        if (cur_ev_elt.nodeName == 'circle') {
+          move_svg_elt(cur_ev_elt.id, 0, y_diff, true); break;
+        } else { // 改行文字コードの文字要素または title 要素
+          cur_ev_elt = cur_ev_elt.nextSibling;
+        }
+      }
+    }
+    cur_elt = cur_elt.nextSibling;
+  }
+}
+
+/* 一番上の行にある期間の数を数える。 */
+function count_periods_in_first_row() {
+  let count = 0;
+  TIMELINE_DATA.periods.forEach((p_dat, pid, m) => {
+    if (p_dat.row === 1) { count++; }
+  });
+  return(count);
+}
+
+/* 一番下の行にある期間の数を数える。 */
+function count_periods_in_last_row() {
+  let count = 0;
+  TIMELINE_DATA.periods.forEach((p_dat, pid, m) => {
+    if (p_dat.row === TIMELINE_DATA.max_row_num) { count++; }
+  });
+  return(count);
 }
 
 /* 「期間を削除」メニュー。 */

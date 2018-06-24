@@ -93,16 +93,17 @@
 <button type="button" onclick="">再設定する</button>
 </td>
 </tr>
+-->
 
 <tr>
 <th>期間の<wbr>配置を<wbr>変更</th>
 <td>
-<select name="" id=""></select> を
-<select name="" id=""></select> の次の行に
-<button type="button" onclick="">再配置する</button>
+<select name="period_to_move" id="period_to_move"></select> を
+<label for="which_direction_upwards"><input type="radio" name="which_direction" id="which_direction_upwards" value="upwards" />上へ</label>
+<label for="which_direction_downwards"><input type="radio" name="which_direction" id="which_direction_downwards" value="downwards" checked />下へ</label>
+<button type="button" onclick="move_period()">動かす</button>
 </td>
 </tr>
--->
 
 <tr>
 <th>期間を<wbr>削除</th>
