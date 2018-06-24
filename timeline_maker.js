@@ -595,10 +595,7 @@ function put_min_year_backwards(new_start_year) {
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.min_year = new_start_year;
   TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
-    move_svg_elt(pid, diff_x, 0);
-    move_svg_elt(pid + '_start_year', diff_x, 0);
-    move_svg_elt(pid + '_end_year', diff_x, 0);
-    move_svg_elt(pid + '_label', diff_x, 0);
+    move_period_and_associated_events(pid, diff_x, 0);
   });
 }
 
@@ -616,10 +613,7 @@ function put_min_year_forward(new_start_year) {
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.min_year = new_start_year;
   TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
-    move_svg_elt(pid, -diff_x, 0);
-    move_svg_elt(pid + '_start_year', -diff_x, 0);
-    move_svg_elt(pid + '_end_year', -diff_x, 0);
-    move_svg_elt(pid + '_label', -diff_x, 0);
+    move_period_and_associated_events(pid, -diff_x, 0);
   });
 }
 
