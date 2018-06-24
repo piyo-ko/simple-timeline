@@ -747,11 +747,17 @@ function move_period_and_associated_events_up_or_down(pid, move_up) {
     y_diff = row_num_diff * CONFIG.row_height;
 
   TIMELINE_DATA.periods.get(pid).row += row_num_diff;
+  move_period_and_associated_events(pid, 0, y_diff);
+}
 
+/* ID が pid の期間と、その期間に関連づけられている出来事がもしあればそれらの
+出来事とを、x 方向に dx だけ、y 方向に dy だけ、動かす。
+他の関数から呼び出すためのもの。単純に SVG 要素を移動させるのみの関数。 */
+function move_period_and_associated_events(pid, dx, dy) {
   // 開始年・終了年・ラベルを表す text 要素と、期間を表す rect 要素を
   // y 方向において y_diff だけ移動させる。
   const targets = [pid, pid + '_start_year', pid + '_end_year', pid + '_label'];
-  targets.forEach(elt_id => { move_svg_elt(elt_id, 0, y_diff); });
+  targets.forEach(elt_id => { move_svg_elt(elt_id, dx, dy); });
 
   // この期間に関連づけられた出来事が、0 個以上の任意の個数、存在しうる。
   let cur_elt = document.getElementById(pid + 'g').firstChild;
@@ -762,7 +768,7 @@ function move_period_and_associated_events_up_or_down(pid, move_up) {
       let cur_ev_elt = cur_elt.firstChild;
       while (cur_ev_elt !== null) {
         if (cur_ev_elt.nodeName == 'circle') {
-          move_svg_elt(cur_ev_elt.id, 0, y_diff, true); break;
+          move_svg_elt(cur_ev_elt.id, dx, dy, true); break;
         } else { // 改行文字コードの文字要素または title 要素
           cur_ev_elt = cur_ev_elt.nextSibling;
         }
