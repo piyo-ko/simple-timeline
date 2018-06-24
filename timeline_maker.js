@@ -798,6 +798,21 @@ function remove_period() {
   }
   const pid = selected_choice(document.menu.period_to_remove),
     g = document.getElementById(pid + 'g');
+
+  // この期間に関連づけられた出来事があるかもしれない。
+  // 出来事を選ぶための各セレクタから、それらの出来事に対応する選択肢を削除。
+  for (let cur_elt = g.firstChild; cur_elt !== null; 
+       cur_elt = cur_elt.nextSibling) {
+    if (cur_elt.nodeName === 'g') { // 出来事を表す g 要素
+      const m = cur_elt.id.match(/^(e_\d+)g$/);
+      if (m === null || m.length !== 2) {
+        alert('Unexpected error in remove_period: ' + m);  reset_svg();  return;
+      }
+      EVENT_SELECTORS.forEach(sel => { remove_choice(sel, m[1]); });
+    }
+  }
+
+  // この期間 (と、その内部の出来事) に関する SVG 要素をすべて削除する。
   remove_all_children(g);
   document.getElementById('timeline_body').removeChild(g);
 
