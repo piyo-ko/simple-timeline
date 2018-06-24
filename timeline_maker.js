@@ -509,8 +509,8 @@ function update_v_bars() {
   const y_bottom = CONFIG.header_row_height + 
                    CONFIG.row_height * (TIMELINE_DATA.max_row_num + 1);
 
-  if (MODE.update_v_bars > 0) {
-    console.log('min_y_incl_margin=' + min_y_incl_margin);
+  if (MODE.f_update_v_bars > 0) {
+    console.log('\nmin_y_incl_margin=' + min_y_incl_margin);
     console.log('max_y_incl_margin=' + max_y_incl_margin);
     console.log('min_y=' + min_y);
     console.log('max_y=' + max_y);
@@ -526,6 +526,9 @@ function update_v_bars() {
         v_txt = document.getElementById('v_bar_txt_' + y);
       header_elt.removeChild(v);
       header_elt.removeChild(v_txt);
+      if (MODE.f_update_v_bars > 0) {
+        console.log('Elements for year ' + y + ' have been removed.');
+      }
     }
   });
 
@@ -536,12 +539,18 @@ function update_v_bars() {
     const x = year_to_x(year),
         txt_span = year.toString().length * CONFIG.monospace_char_width;
     if (TIMELINE_DATA.v_bars.has(year)) { // year 年の縦線が存在する場合。
+      if (MODE.f_update_v_bars > 0) {
+        console.log('Elements for year ' + year + ' exist.');
+      }
       const v = document.getElementById('v_bar_' + year),
         v_attr = [['x1', x], ['x2', x], ['y2', y_bottom]]; // y1 は変化しない。
       v_attr.forEach(k_v => { v.setAttribute(k_v[0], k_v[1]); });
       const v_txt = document.getElementById('v_bar_txt_' + year);
       v_txt.setAttribute('x', x - txt_span/2); // x 以外は変化しない。
     } else { // year 年の縦線が存在しないので、新たに作成する。
+      if (MODE.f_update_v_bars > 0) {
+        console.log('New elements for year ' + year + ' are created.');
+      }
       const v = document.createElementNS(SVG_NS, 'line'),
         v_attr = [['id', 'v_bar_' + year], ['class', 'v_bar'],
           ['x1', x], ['y1', CONFIG.txt_region_in_header_row],
