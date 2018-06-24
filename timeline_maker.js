@@ -1187,6 +1187,17 @@ function set_read_values() {
 
   // (6) 縦の目盛線と横罫線を再描画する (妥当性を確認するよりも強制的に再描画
   // する方が楽で確実なので)。
+  // ただし、TIMELINE_DATA.v_bars の設定だけは先にしておく (そうしないと同じ年の
+  // 目盛線が重複して作られてしまうため)。
+  for (let cur_v = document.getElementById('header_and_v_bars').firstChild;
+       cur_v !== null; cur_v = cur_v.nextSibling) {
+    if (cur_v.nodeName === 'line') {
+      const vid_m = cur_v.id.match(/^v_bar_(\d+)$/);
+      if (vid_m !== null && vid_m.length === 2) {  // 横罫線は無視
+        TIMELINE_DATA.v_bars.add(parseInt(vid_m[1]));
+      }
+    }
+  }
   update_v_bars();
 }
 
