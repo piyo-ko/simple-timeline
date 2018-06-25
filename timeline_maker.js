@@ -342,8 +342,14 @@ function add_period() {
     };
     alert(msg[LANG]);  return;
   }
+  add_period_0(new_pid, start_year, start_year_type, end_year, end_year_type, 
+    period_label, which_row, color_theme);
+}
 
-  const svg_elt = document.getElementById('timeline'),
+/* 「期間を追加」メニューの実質部分。配色見本の表示などで、フォームからの入力
+なしに期間を描画したい場合があるので、別の関数に分けた。 */
+function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_type, period_label, which_row, color_theme) {
+  const m = document.menu, svg_elt = document.getElementById('timeline'),
     timeline_body_elt = document.getElementById('timeline_body'),
     period_len = end_year - start_year + 1,
     rect_w = period_len * CONFIG.year_to_px_factor;
@@ -935,7 +941,12 @@ function add_event() {
     const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
     alert(msg[LANG]);  return;
   }
+  add_event_0(new_eid, pid, p_dat, event_year, event_label);
+}
 
+/* 「出来事を追加」メニューの実質部分。配色見本の表示などで、フォームからの入力
+なしに出来事を描画したい場合があるので、別の関数に分けた。 */
+function add_event_0(new_eid, pid, p_dat, event_year, event_label) {
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('id', new_eid + 'g');
 
@@ -1211,3 +1222,38 @@ function set_read_values() {
   update_v_bars();
 }
 
+/* 「配色見本を表示する」メニュー。 */
+function show_color_samples() {
+  const conf_msg = {
+    ja: '現在の年表データを消してもよい場合は [OK] をクリックしてください。',
+    en: 'Click [OK] if it is acceptable to delete the current data.'
+  };
+  if (! confirm(conf_msg[LANG])) { return; }
+
+  // セレクタの選択肢、フォームの各入力、管理用データ、SVG データ、
+  // これらすべてをリセットする。
+  PERIOD_SELECTORS.forEach(sel => { remove_all_children(sel); });
+  EVENT_SELECTORS.forEach(sel => { remove_all_children(sel); });
+  const menu = document.menu, which_row = menu.which_row;
+  remove_all_children(which_row);
+  menu.reset();
+  TIMELINE_DATA.reset_all();
+  reset_svg();
+
+  const start_year = 123, end_year = 198, event_year = 156;  // 適当な定数
+  let right_side_open = true, row_num = 1;
+  // 各配色テーマで一つずつ期間と出来事を描画する。行ごとに交替で右端・左端を
+  // グラデーションにしてみた。
+  COLOR_THEMES.forEach(th => {
+    const new_pid = 'p_' + TIMELINE_DATA.next_period_id++,
+      start_year_type = right_side_open ? 'actual' : 'dummy',
+      end_year_type = right_side_open ? 'dummy' : 'actual';
+    add_period_0(new_pid, start_year, start_year_type, end_year, end_year_type, 
+                 th.name[LANG], row_num, th.id);
+    right_side_open = (!right_side_open);
+    row_num++;
+    const new_eid = 'e_' + TIMELINE_DATA.next_event_id++;
+    add_event_0(new_eid, new_pid, TIMELINE_DATA.periods.get(new_pid), 
+                event_year, 'test');
+  });
+}
