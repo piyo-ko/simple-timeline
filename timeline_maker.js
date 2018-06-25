@@ -114,7 +114,7 @@ window.top.onload = function () {
   m.reset();
 
   [m.period_to_re_label, m.period_to_move, m.period_to_remove, 
-   m.period_including_this_event]
+   m.period_to_re_color, m.period_including_this_event]
    .forEach(sel => { PERIOD_SELECTORS.add(sel); });
   EVENT_SELECTORS.add(m.event_to_remove);
 
@@ -278,6 +278,8 @@ function set_theme_defs() {
     add_grad(false, false, th.id);
     // 「期間を追加」メニューの「配色」セレクタに選択肢を追加
     add_selector_option(document.menu.color_theme, th.id, th.name[LANG]);
+    // 「期間の配色を変更」メニューの「配色」セレクタに選択肢を追加
+    add_selector_option(document.menu.new_color_theme, th.id, th.name[LANG]);
   });
 }
 
@@ -641,6 +643,53 @@ function modify_period_label() {
   PERIOD_SELECTORS.forEach(sel => {
     rename_choice(sel, pid, new_period_label);
   });
+}
+
+/* 「期間の配色を変更」メニュー。 */
+function re_color() {
+  const pid = selected_choice(document.menu.period_to_re_color),
+    new_color_theme = selected_choice(document.menu.new_color_theme),
+    p_dat = TIMELINE_DATA.periods.get(pid),
+    re = new RegExp(p_dat.base_color_theme + 
+                    '_\(closed\|open\)_\(closed\|open\)'),
+    grad_m = p_dat.color_theme.match(re);
+  if (grad_m === null || grad_m.length !== 3) {
+    alert('Unexpected error in re_color()');  return;
+  }
+  const grad_str = '_' + grad_m[1] + '_' + grad_m[2];
+
+  // 期間を表す矩形。
+  const rect = document.getElementById(pid);
+  rect.setAttribute('fill', 'url(#' + new_color_theme + grad_str + ')');
+  // 期間に対するラベル。
+  const label_txt = document.getElementById(pid + '_label');
+  label_txt.setAttribute('class', 'label ' + new_color_theme);
+  // 開始年と終了年のテキスト (もしあれば)。
+  // grad_str と、start_year_txt の存否と、end_year_txt の存否との間の
+  // 整合性のチェックは、今はしていない (本当はした方がよい)。
+  const start_year_txt = document.getElementById(pid + '_start_year');
+  if (start_year_txt !== null) {
+    start_year_txt.setAttribute('class', 'year ' + new_color_theme);
+  }
+  const end_year_txt = document.getElementById(pid + '_end_year');
+  if (end_year_txt !== null) {
+    end_year_txt.setAttribute('class', 'year ' + new_color_theme);
+  }
+  // この期間に関連づけられた出来事を表す円があれば、その配色も変更する。
+  for (let cur_elt = document.getElementById(pid + 'g').firstChild;
+       cur_elt !== null; cur_elt = cur_elt.nextSibling) {
+    if (cur_elt.nodeName === 'g') { // 出来事
+      for (let cur_ev_elt = cur_elt.firstChild;
+           cur_ev_elt !== null; cur_ev_elt = cur_ev_elt.nextSibling) {
+        if (cur_ev_elt.nodeName == 'circle') {
+          cur_ev_elt.setAttribute('class', new_color_theme);
+        }
+      }
+    }
+  }
+  // 管理用データも更新する。
+  p_dat.base_color_theme = new_color_theme;
+  p_dat.color_theme = new_color_theme + grad_str;
 }
 
 /* 「期間の配置を変更」メニュー。 */
