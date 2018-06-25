@@ -571,15 +571,7 @@ function put_min_year_backwards(new_start_year) {
   if (TIMELINE_DATA.init_state || TIMELINE_DATA.min_year <= new_start_year) {
     return;
   }
-
-  const diff_year = TIMELINE_DATA.min_year - new_start_year, // 正になる
-    diff_x = diff_year * CONFIG.year_to_px_factor;
-  TIMELINE_DATA.svg_width += diff_x;
-  resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
-  TIMELINE_DATA.min_year = new_start_year;
-  TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
-    move_period_and_associated_events(pid, diff_x, 0);
-  });
+  change_min_year(new_start_year);
 }
 
 /* 種々の期間の開始年のうちで最も早い年 (TIMELINE_DATA.min_year) を 
@@ -589,14 +581,18 @@ function put_min_year_forward(new_start_year) {
   if (TIMELINE_DATA.init_state || new_start_year <= TIMELINE_DATA.min_year) {
     return;
   }
+  change_min_year(new_start_year);
+}
 
-  const diff_year = new_start_year - TIMELINE_DATA.min_year, // 正になる
+/* put_min_year_backwards と put_min_year_forward の共通部分。 */
+function change_min_year(new_start_year) {
+  const diff_year = TIMELINE_DATA.min_year - new_start_year,
     diff_x = diff_year * CONFIG.year_to_px_factor;
-  TIMELINE_DATA.svg_width -= diff_x;
+  TIMELINE_DATA.svg_width += diff_x;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.min_year = new_start_year;
   TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
-    move_period_and_associated_events(pid, -diff_x, 0);
+    move_period_and_associated_events(pid, diff_x, 0);
   });
 }
 
@@ -607,12 +603,7 @@ function put_max_year_forward(new_end_year) {
   if (TIMELINE_DATA.init_state || new_end_year <= TIMELINE_DATA.max_year) {
     return;
   }
-
-  const diff_year = new_end_year - TIMELINE_DATA.max_year, // 正になる
-    diff_x = diff_year * CONFIG.year_to_px_factor;
-  TIMELINE_DATA.svg_width += diff_x;
-  resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
-  TIMELINE_DATA.max_year = new_end_year;
+  change_max_year(new_end_year);
 }
 
 /* 種々の期間の開始年のうちで最も遅い年 (TIMELINE_DATA.max_year) を
@@ -622,10 +613,13 @@ function put_max_year_backwards(new_end_year) {
   if (TIMELINE_DATA.init_state || TIMELINE_DATA.max_year <= new_end_year) {
     return;
   }
+  change_max_year(new_end_year);
+}
 
-  const diff_year = TIMELINE_DATA.max_year - new_end_year, // 正になる
-    diff_x = diff_year * CONFIG.year_to_px_factor;
-  TIMELINE_DATA.svg_width -= diff_x;
+/* put_max_year_forward と put_max_year_backwards の共通部分。 */
+function change_max_year(new_end_year) {
+  const diff_year = new_end_year - TIMELINE_DATA.max_year;
+  TIMELINE_DATA.svg_width += diff_year * CONFIG.year_to_px_factor;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.max_year = new_end_year;
 }
