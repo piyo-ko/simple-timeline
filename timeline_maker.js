@@ -505,10 +505,8 @@ function update_v_bars() {
   TIMELINE_DATA.v_bars.forEach(y => {
     if (y < min_y || max_y < y) { 
       TIMELINE_DATA.v_bars.delete(y);
-      const v = document.getElementById('v_bar_' + y),
-        v_txt = document.getElementById('v_bar_txt_' + y);
-      header_elt.removeChild(v);
-      header_elt.removeChild(v_txt);
+      header_elt.removeChild(document.getElementById('v_bar_' + y));
+      header_elt.removeChild(document.getElementById('v_bar_txt_' + y));
       if (MODE.f_update_v_bars > 0) {
         console.log('Elements for year ' + y + ' have been removed.');
       }
