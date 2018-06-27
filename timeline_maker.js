@@ -168,6 +168,10 @@ function rect_y_to_row_num(y) {
   return((row_start_y - CONFIG.header_row_height) / CONFIG.row_height + 1);
 }
 
+/* 年を表示するための text 要素の textLength 属性に設定すべき値を求める。 */
+function year_txt_len(year) {
+  return(year.toString().length * CONFIG.monospace_char_width);
+}
 /* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
   resize_svg(0, 0);
@@ -426,8 +430,7 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
 
   if (! left_end_open) {
     const start_txt = document.createElementNS(SVG_NS, 'text'),
-      start_txt_len = (start_year.toString().length) * 
-                      CONFIG.monospace_char_width,
+      start_txt_len = year_txt_len(start_year),
       start_attr = [['id', new_pid + '_start_year'],
         ['class', 'year ' + color_theme],
         ['x', rect_x], ['y', row_num_to_year_txt_y(which_row)],
@@ -438,7 +441,7 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
   }
   if (! right_end_open) {
     const end_txt = document.createElementNS(SVG_NS, 'text'),
-      end_txt_len = (end_year.toString().length) * CONFIG.monospace_char_width,
+      end_txt_len = year_txt_len(end_year),
       end_txt_x = rect_x + rect_w - end_txt_len,
       end_attr = [['id', new_pid + '_end_year'],
         ['class', 'year ' + color_theme],
@@ -524,8 +527,7 @@ function update_v_bars() {
   for (let year = min_y; year <= max_y; 
            year += CONFIG.vertical_bar_interval_in_year) {
     // year 年の目盛に対応する x 座標と、この目盛用のテキスト要素の幅。
-    const x = year_to_x(year),
-        txt_span = year.toString().length * CONFIG.monospace_char_width;
+    const x = year_to_x(year), txt_span = year_txt_len(year.toString());
     if (TIMELINE_DATA.v_bars.has(year)) { // year 年の縦線が存在する場合。
       if (MODE.f_update_v_bars > 0) {
         console.log('Elements for year ' + year + ' exist.');
