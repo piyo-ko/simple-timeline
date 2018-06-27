@@ -321,29 +321,36 @@ function add_period() {
 
   m.period_label.value = m.start_year.value = m.end_year.value = '';
 
+  if (! check_year_range(start_year, end_year)) { return; }
+  if (period_label === '') {
+    const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
+    alert(msg[LANG]);  return;
+  }
+  add_period_0(new_pid, start_year, start_year_type, end_year, end_year_type, 
+    period_label, which_row, color_theme);
+}
+
+/* 開始年と終了年の入力を parseInt した結果を引数にとり、その入力がまともか
+どうかをチェックして、まともなら true を返し、駄目なら false を返す。 */
+function check_year_range(start_year, end_year) {
   if (isNaN(start_year)) {
     const msg = {ja: '開始年は整数を入力してください', 
                  en: 'Enter an integer for the start year.'};
-    alert(msg[LANG]);  return;
+    alert(msg[LANG]);  return(false);
   }
   if (isNaN(end_year)) {
     const msg = {ja: '終了年は整数を入力してください', 
                  en: 'Enter an integer for the end year.'};
-    alert(msg[LANG]);  return;
-  }
-  if (period_label === '') {
-    const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
-    alert(msg[LANG]);  return;
+    alert(msg[LANG]);  return(false);
   }
   if (end_year <= start_year) {
     const msg = {
       ja: '開始年以前の終了年を指定しないでください',
       en: 'Do not enter the end year that is earlier than or equal to the start year.'
     };
-    alert(msg[LANG]);  return;
+    alert(msg[LANG]);  return(false);
   }
-  add_period_0(new_pid, start_year, start_year_type, end_year, end_year_type, 
-    period_label, which_row, color_theme);
+  return(true);
 }
 
 /* 「期間を追加」メニューの実質部分。配色見本の表示などで、フォームからの入力
