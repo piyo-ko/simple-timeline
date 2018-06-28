@@ -113,8 +113,9 @@ window.top.onload = function () {
   sel.selectedIndex = 0;
   m.reset();
 
-  [m.period_to_re_label, m.period_to_move, m.period_to_remove, 
-   m.period_to_re_color, m.period_including_this_event]
+  [m.period_to_re_label, m.period_to_re_color, 
+   m.period_to_re_define, m.period_to_move, m.period_to_remove, 
+   m.period_including_this_event]
    .forEach(sel => { PERIOD_SELECTORS.add(sel); });
   EVENT_SELECTORS.add(m.event_to_remove);
 
@@ -706,6 +707,115 @@ function re_color() {
   // 管理用データも更新する。
   p_dat.base_color_theme = new_color_theme;
   p_dat.color_theme = new_color_theme + grad_str;
+}
+
+/* 「期間の範囲を変更」メニューで期間を選択すると呼ばれる。期間のセレクタ以外の
+入力欄に現在の値をデフォルト値として設定する。 */
+function set_present_values() {
+  const m = document.menu, pid = selected_choice(m.period_to_re_define),
+    p_dat = TIMELINE_DATA.periods.get(pid);
+
+  m.new_start_year.value = p_dat.start_year;
+  const re_start_open = /_open_(closed|open)$/,
+    s_dummy = document.getElementById('new_start_year_type_dummy'),
+    s_actual = document.getElementById('new_start_year_type_actual');
+  if (re_start_open.test(p_dat.color_theme)) {
+    s_dummy.checked = true;  s_actual.checked = false;
+  } else {
+    s_actual.checked = true;  s_dummy.checked = false;
+  }
+
+  m.new_end_year.value = p_dat.end_year;
+  const re_end_open = /_(closed|open)_open$/,
+    e_dummy = document.getElementById('new_end_year_type_dummy'),
+    e_actual = document.getElementById('new_end_year_type_actual');
+  if (re_end_open.test(p_dat.color_theme)) {
+    e_dummy.checked = true;  e_actual.checked = false;
+  } else {
+    e_actual.checked = true;  e_dummy.checked = false;
+  }
+}
+
+/* 「期間の範囲を変更」メニュー。 */
+function re_define_period() {
+  const m = document.menu, svg_elt = document.getElementById('timeline'),
+    pid = selected_choice(m.period_to_re_define),
+    new_start_year = parseInt(m.new_start_year.value),
+    new_start_year_type = selected_radio_choice(m.new_start_year_type),
+    new_end_year = parseInt(m.new_end_year.value),
+    new_end_year_type = selected_radio_choice(m.new_end_year_type);
+
+  if (! check_year_range(new_start_year, new_end_year)) { return; }
+
+  if (new_start_year < TIMELINE_DATA.min_year) {
+    put_min_year_backwards(new_start_year);
+  }
+  if (TIMELINE_DATA.max_year < new_end_year) {
+    put_max_year_forward(new_end_year);
+  }
+  update_v_bars();
+  svg_elt.dataset.min_year = TIMELINE_DATA.min_year;
+  svg_elt.dataset.max_year = TIMELINE_DATA.max_year;
+
+  const p_dat = TIMELINE_DATA.periods.get(pid),
+    rect = document.getElementById(pid),
+    g = document.getElementById(pid + 'g'),
+    new_x = year_to_x(new_start_year),
+    new_w = (new_end_year - new_start_year + 1) * CONFIG.year_to_px_factor,
+    typ = rect_type(new_start_year_type, new_end_year_type),
+    gradient_def_name = p_dat.base_color_theme + '_' + typ.gradient_type;
+
+  // 矩形、ラベルのテキスト、管理用データを更新する。
+  [['x', new_x], ['width', new_w], ['fill', 'url(#' + gradient_def_name + ')']]
+    .forEach(k_v => { rect.setAttribute(k_v[0], k_v[1]); });
+  document.getElementById(pid + '_label').setAttribute('x', new_x);
+  p_dat.start_year = new_start_year;
+  p_dat.end_year = new_end_year;
+  p_dat.color_theme = gradient_def_name;
+
+  // 開始年のテキスト
+  let start_txt = document.getElementById(pid + '_start_year');
+  if (typ.left_end_open) {
+    // 開始側はグラデーションにし、開始年のテキストは付けない。
+    // 既存のテキスト要素があれば削除する。
+    if (start_txt !== null) { g.removeChild(start_txt); }
+  } else { // 開始年のテキストを付ける。
+    if (start_txt === null) { // 既存のテキスト要素がなければ作る。
+      start_txt = document.createElementNS(SVG_NS, 'text');
+      [['id', pid + '_start_year'], ['class', 'year ' + p_dat.base_color_theme],
+       ['y', row_num_to_year_txt_y(p_dat.row)],
+       ['dx', 0], ['dy', CONFIG.font_size]]
+        .forEach(k_v => { start_txt.setAttribute(k_v[0], k_v[1]); });
+      g.appendChild(start_txt);  add_text_node(g, '\n');
+    } else { // 既存のテキストが存在している。
+      remove_all_children(start_txt); // 現在の文字列を削除
+    }
+    // 以下の 3 行は、既存のテキストの有無によらない共通の処理。
+    start_txt.setAttribute('x', new_x);
+    start_txt.setAttribute('textLength', year_txt_len(new_start_year));
+    add_text_node(start_txt, new_start_year);
+  }
+
+  // 終了年のテキストに関しても、類似の処理を行う。
+  let end_txt = document.getElementById(pid + '_end_year');
+  if (typ.right_end_open) {
+    if (end_txt !== null) { g.removeChild(end_txt); }
+  } else {
+    if (end_txt === null) {
+      end_txt = document.createElementNS(SVG_NS, 'text');
+      [['id', pid + '_end_year'], ['class', 'year ' + p_dat.base_color_theme],
+       ['y', row_num_to_year_txt_y(p_dat.row)],
+       ['dx', 0], ['dy', CONFIG.font_size]]
+        .forEach(k_v => { end_txt.setAttribute(k_v[0], k_v[1]); });
+      g.appendChild(end_txt);  add_text_node(g, '\n');
+    } else {
+      remove_all_children(end_txt);
+    }
+    const end_txt_len = year_txt_len(new_end_year);
+    end_txt.setAttribute('x', new_x + new_w - end_txt_len);
+    end_txt.setAttribute('textLength', end_txt_len);
+    add_text_node(end_txt, new_end_year);
+  }
 }
 
 /* 「期間の配置を変更」メニュー。 */

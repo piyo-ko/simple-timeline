@@ -85,24 +85,22 @@
 </td>
 </tr>
 
-<!--
 <tr>
 <th>期間の<wbr>範囲を<wbr>変更</th>
 <td>
-<select name="" id=""></select> の
+<select name="period_to_re_define" id="period_to_re_define" onchange="set_present_values()"></select> の
 開始年を
-<input type="number" name="" id="" step="1" min="-9999" max="9999" /> 年
-(<label><input type="radio" name="" id="" value="" />実際の開始年</label>
-<label><input type="radio" name="" id="" value="" />単なる左端の指定用</label>)
+<input type="number" name="new_start_year" id="new_start_year" step="1" min="-9999" max="9999" /> 年
+(<label for="new_start_year_type_actual"><input type="radio" name="new_start_year_type" id="new_start_year_type_actual" value="actual" />実際の開始年</label>
+<label for="new_start_year_type_dummy"><input type="radio" name="new_start_year_type" id="new_start_year_type_dummy" value="dummy" />単なる左端の指定用</label>)
 に、終了年を
-<input type="number" name="" id="" step="1" min="-9999" max="9999" /> 年
-(<label><input type="radio" name="" id="" value="" />実際の終了年</label>
-<label><input type="radio" name="" id="" value="" />単なる右端の指定用</label>)
+<input type="number" name="new_end_year" id="new_end_year" step="1" min="-9999" max="9999" /> 年
+(<label for="new_end_year_type_actual"><input type="radio" name="new_end_year_type" id="new_end_year_type_actual" value="actual" />実際の終了年</label>
+<label for="new_end_year_type_dummy"><input type="radio" name="new_end_year_type" id="new_end_year_type_dummy" value="dummy" />単なる右端の指定用</label>)
 に、それぞれ
-<button type="button" onclick="">再設定する</button>
+<button type="button" onclick="re_define_period()">再設定する</button>
 </td>
 </tr>
--->
 
 <tr>
 <th>期間の<wbr>配置を<wbr>変更</th>
