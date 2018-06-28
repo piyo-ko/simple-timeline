@@ -172,6 +172,19 @@ function rect_y_to_row_num(y) {
 function year_txt_len(year) {
   return(year.toString().length * CONFIG.monospace_char_width);
 }
+/* 期間の開始側 (左側) と終了側 (右側) について、'actual' または 'dummy' と
+指定する入力を得た場合に、その入力と等価で、後の処理の都合に適した形式の
+三つの値からなるオブジェクトを返す。 */
+function rect_type(start_year_type, end_year_type) {
+  const t = {};
+  t.left_end_open = (start_year_type === 'dummy') ? true : false;
+  t.right_end_open = (end_year_type === 'dummy') ? true : false;
+  t.gradient_type = t.left_end_open ?
+                      (t.right_end_open ? 'open_open' : 'open_closed') :
+                      (t.right_end_open ? 'closed_open' : 'closed_closed');
+  return(t);
+}
+
 /* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
   resize_svg(0, 0);
@@ -416,19 +429,15 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
   const rect = document.createElementNS(SVG_NS, 'rect'),
     rect_x = year_to_x(start_year),
     rect_y = row_num_to_rect_y(which_row),
-    left_end_open = ((start_year_type === 'dummy') ? true : false),
-    right_end_open = ((end_year_type === 'dummy') ? true : false),
-    gradient_type = (left_end_open ?
-                       (right_end_open ? 'open_open' : 'open_closed') :
-                       (right_end_open ? 'closed_open' : 'closed_closed')),
-    gradient_def_name = color_theme + '_' + gradient_type,
+    typ = rect_type(start_year_type, end_year_type),
+    gradient_def_name = color_theme + '_' + typ.gradient_type,
     rect_attr = [['id', new_pid], ['x', rect_x], ['y', rect_y],
       ['width', rect_w], ['height', CONFIG.bar_height],
       ['fill', 'url(#' + gradient_def_name + ')']];
   rect_attr.forEach(k_v => { rect.setAttribute(k_v[0], k_v[1]); });
   add_text_node(g, '\n');  g.appendChild(rect);  add_text_node(g, '\n');
 
-  if (! left_end_open) {
+  if (! typ.left_end_open) {
     const start_txt = document.createElementNS(SVG_NS, 'text'),
       start_txt_len = year_txt_len(start_year),
       start_attr = [['id', new_pid + '_start_year'],
@@ -439,7 +448,7 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
     add_text_node(start_txt, start_year);
     g.appendChild(start_txt);  add_text_node(g, '\n');
   }
-  if (! right_end_open) {
+  if (! typ.right_end_open) {
     const end_txt = document.createElementNS(SVG_NS, 'text'),
       end_txt_len = year_txt_len(end_year),
       end_txt_x = rect_x + rect_w - end_txt_len,
