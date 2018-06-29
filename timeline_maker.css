@@ -33,7 +33,6 @@ div.container {
   padding-top: 4pt;
   padding-bottom: 4pt;
   overflow: auto;
-  background: hsl(147, 25%, 17%);
 }
 #year_slider_container, #description_items {
   grid-row-start: 1;
@@ -46,6 +45,19 @@ div.container {
 #description_items {
   grid-column-start: 2;
   grid-column-end: 3;
+  margin-top: 0;
+}
+#description_items > li {
+  display: inline;
+  margin-right: 1ex;
+}
+#description_items > li::before {
+  content: "💎";
+}
+#min_year, #max_year {
+  font-family: monospace;
+  width: 5em;
+  text-align: right;
 }
 
 svg {

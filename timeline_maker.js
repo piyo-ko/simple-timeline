@@ -321,6 +321,52 @@ function move_svg_elt(id, dx, dy, is_circle = false) {
   elt.setAttribute(x_name, x + dx);  elt.setAttribute(y_name, y + dy);
 }
 
+/* 年表全体で最も早い年・最も遅い年が変化する可能性がある場合 (期間の追加、
+期間の範囲の変更、既存ファイルの読み込み、配色見本の表示のいずれかを行った
+場合) に呼ばれる。スライダの左右に表示される年の文字列を書き換え、スライダの 
+min 属性と max 属性の値も書き換える。 */
+function set_year_range() {
+  const y = document.menu.year_slider, 
+    min_year = document.getElementById('min_year'),
+    max_year = document.getElementById('max_year');
+  y.min = min_year.textContent = TIMELINE_DATA.min_year;
+  y.max = max_year.textContent = TIMELINE_DATA.max_year;
+  y.value = Math.floor((TIMELINE_DATA.min_year + TIMELINE_DATA.max_year)/2);
+}
+
+/* スライダの値を変更すると呼ばれる。 */
+function view() {
+  // スライダで指定された年を中心に表示する。
+  const svg_container = document.getElementById('timeline_container'),
+    container_rect = svg_container.getBoundingClientRect(),
+    x_offset = Math.floor(container_rect.width / 2),
+    year_to_view = parseInt(document.menu.year_slider.value);
+  svg_container.scrollLeft = year_to_x(year_to_view) - x_offset;
+
+  // スライダで指定している年の前後 span_half (= 10) 年の出来事を、年の順に
+  // リスト表示する。
+  const event_list = [], span_half = 10, // 10 は適当に決めた定数
+    min_y = year_to_view - span_half, max_y = year_to_view + span_half;
+  TIMELINE_DATA.events.forEach((y, eid, m) => {
+    if (min_y <= y && y <= max_y) { event_list.push( {id: eid, year: y} ); }
+  });
+  event_list.sort((a, b) => {
+    if (a.year < b.year) { return(-1); }
+    if (a.year > b.year) { return(1); }
+    return(0);
+  });
+  // 非効率だが、ひとまずは、この関数が呼ばれるたびにリストを白紙化・再作成
+  // することにする。
+  const ul = document.getElementById('description_items');
+  ul.innerHTML = '';
+  event_list.forEach(ev => {
+    const label_txt = document.getElementById(ev.id + '_label').textContent,
+      li = document.createElement('li');
+    li.innerHTML = label_txt;
+    ul.appendChild(li);
+  });
+}
+
 /* 「期間を追加」メニュー。 */
 function add_period() {
   const new_pid = 'p_' + TIMELINE_DATA.next_period_id++;
@@ -420,6 +466,7 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
   svg_elt.dataset.min_year = TIMELINE_DATA.min_year;
   svg_elt.dataset.max_year = TIMELINE_DATA.max_year;
   svg_elt.dataset.max_row_num = TIMELINE_DATA.max_row_num;
+  set_year_range();
 
   const g = document.createElementNS(SVG_NS, 'g');
   g.setAttribute('id', new_pid + 'g');
@@ -753,6 +800,7 @@ function re_define_period() {
   update_v_bars();
   svg_elt.dataset.min_year = TIMELINE_DATA.min_year;
   svg_elt.dataset.max_year = TIMELINE_DATA.max_year;
+  set_year_range();
 
   const p_dat = TIMELINE_DATA.periods.get(pid),
     rect = document.getElementById(pid),
@@ -1195,6 +1243,7 @@ function set_read_values() {
   }
   TIMELINE_DATA.min_year = min_year;
   TIMELINE_DATA.max_year = max_year;
+  set_year_range();
   const year_span = max_year + 1 - min_year + CONFIG.h_margin_in_year * 2;
   if (year_span * CONFIG.year_to_px_factor !== svg_width) {
     const msg = {ja: '最も早い年から最も遅い年までの長さと幅とが不整合です',
