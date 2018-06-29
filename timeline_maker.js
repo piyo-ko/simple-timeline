@@ -134,6 +134,9 @@ function x_to_year(x) {
   return(x / CONFIG.year_to_px_factor
            + TIMELINE_DATA.min_year - CONFIG.h_margin_in_year);
 }
+/* 円の cx 属性で指定される x 座標から年への変換。
+x_to_year(cx) - 0.5 と同じ。 */
+function cx_to_year(cx) { return(Math.floor(x_to_year(cx))); }
 
 /* 行番号から、その行の上端の y 座標への変換 */
 function row_num_to_row_start_y(row) {
@@ -1295,7 +1298,7 @@ function set_read_values() {
       }
       const cx = parseInt(cur_e.getAttribute('cx')),
         cy = parseInt(cur_e.getAttribute('cy')),
-        event_year = x_to_year(cx);
+        event_year = cx_to_year(cx);
       if (cy !== rect_mid_y) {
         const msg = {ja: '期間 ' + cur_pid + ' と出来事 ' + cur_eid + 
                          ' の位置がずれています',
