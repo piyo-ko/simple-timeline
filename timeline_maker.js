@@ -22,12 +22,6 @@ class period_data {
   }
 }
 
-/* 各出来事について管理するためのオブジェクト */
-class event_data {
-  constructor(year, event_id) { this.year = year; this.event_id = event_id; }
-  print() { console.log(JSON.stringify(this)); }
-}
-
 /* デバッグ対象の関数に対応するプロパティを 0 以上の値に設定すること。 */
 const MODE = {
   f_add_period: 0,  f_update_v_bars: 0,  f_remove_period: 0
@@ -1088,8 +1082,7 @@ function add_event_0(new_eid, pid, p_dat, event_year, event_label) {
   const period_g = document.getElementById(pid + 'g');
   period_g.appendChild(g);  add_text_node(period_g, '\n');
 
-  const e_dat = new event_data(event_year, pid);
-  TIMELINE_DATA.events.set(new_eid, e_dat);
+  TIMELINE_DATA.events.set(new_eid, event_year);
   EVENT_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_eid, event_label);
   });
@@ -1313,8 +1306,7 @@ function set_read_values() {
                          ' must be included within period ' + cur_pid + '.'}
         alert(msg[LANG]);  reset_svg();  return;
       }
-      const e_dat = new event_data(event_year, cur_eid);
-      TIMELINE_DATA.events.set(cur_eid, e_dat);
+      TIMELINE_DATA.events.set(cur_eid, event_year);
       const event_label_txt = 
         document.getElementById(cur_eid + '_label').textContent;
       EVENT_SELECTORS.forEach(sel => {
