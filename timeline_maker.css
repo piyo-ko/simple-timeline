@@ -1,0 +1,142 @@
+body {
+  background: hsl(27, 0%, 17%);
+  color: hsl(27, 67%, 80%);
+  font-family: serif;
+  padding: 0;
+}
+
+div.container {
+  display: block;
+  margin-left: 1vw;
+  margin-right: 1vw;
+  max-width: 98vw;
+  overflow: auto;
+}
+#timeline_container {
+  text-align: center;
+  max-height: 70vh;
+}
+#menu_container {
+  max-height: 20vh;
+  padding-top: 4pt;
+  padding-bottom: 4pt;
+  border: dotted 1px;
+}
+#detailed_info {
+  display: grid;
+  max-width: 98vw;
+  margin-left: 1vw;
+  margin-right: 1vw;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto;
+  max-height: 5vh;
+  padding-top: 4pt;
+  padding-bottom: 4pt;
+  overflow: auto;
+}
+#year_slider_container, #description_items {
+  grid-row-start: 1;
+  grid-row-end: 2;
+}
+#year_slider {
+  grid-column-start: 1;
+  grid-column-end: 2;
+}
+#description_items {
+  grid-column-start: 2;
+  grid-column-end: 3;
+  margin-top: 0;
+}
+#description_items > li {
+  display: inline;
+  margin-right: 1ex;
+}
+#description_items > li::before {
+  content: "💎";
+}
+#min_year, #max_year {
+  font-family: monospace;
+  width: 5em;
+  text-align: right;
+}
+
+svg {
+  border: solid 2px hsl(147, 75%, 47%);
+  background: white;
+}
+
+select > option {
+  padding-left: 1em;
+  padding-right: 1em;
+}
+
+h1 {
+  font-size: large;
+  text-align: center;
+  background: hsl(27, 35%, 37%);
+}
+
+[lang="ja"] h1 {
+  font-family: "筑紫B丸ゴシック", sans-serif;
+}
+[lang="en"] h1 {
+  font-family: Luminari, Skia, sans-serif;
+}
+
+a {
+  color: hsl(167, 75%, 67%);
+}
+a:hover {
+  color: hsl(27, 25%, 17%);
+  background: hsl(167, 75%, 67%);
+}
+
+table {
+  border-collapse: collapse;
+  margin-left: 1ex;
+  margin-right: 1ex;
+}
+
+td, th {
+  border: solid 1px;
+  padding: 4pt;
+}
+th {
+  word-break: keep-all;
+}
+[lang="ja"] th, [lang="ja"] button {
+  font-family: "筑紫B丸ゴシック", sans-serif;
+}
+[lang="en"] th, [lang="en"] button {
+  font-family: Optima, Skia, sans-serif;
+}
+tr:nth-child(3n) > th, tr:nth-child(3n) > td {
+  background: hsl(27, 25%, 17%);
+}
+tr:nth-child(3n+1) > th, tr:nth-child(3n+1) > td {
+  background: hsl(147, 25%, 17%);
+}
+tr:nth-child(3n+2) > th, tr:nth-child(3n+2) > td {
+  background: hsl(267, 25%, 17%);
+}
+td ul {
+  margin: 0;
+  padding-left: 1em;
+}
+nav {
+  text-align: right;
+  margin-top: 20pt;
+}
+button {
+  border-radius: 8pt;
+  background: hsl(27, 27%, 80%);
+  color: hsl(27, 50%, 10%);
+  font-family: sans-serif;
+}
+
+label {
+  white-space: nowrap;
+}
+label.wrappable {
+  white-space: normal;
+}

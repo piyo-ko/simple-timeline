@@ -1,0 +1,24 @@
+circle {
+  stroke-width: 1;
+}
+text.year {
+  font-family: monospace;
+  font-size: 16px;
+}
+text.label {
+  font-family: serif;
+  font-size: 16px;
+}
+
+text.v_bar {
+  fill: hsl(0, 0%, 30%);
+}
+line.v_bar {
+  stroke-width: 1;
+  stroke: hsl(180, 10%, 50%);
+  stroke-dasharray: 8,8;
+}
+line.header {
+  stroke-width: 2;
+  stroke: hsl(230, 70%, 40%);
+}
