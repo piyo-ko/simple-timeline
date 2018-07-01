@@ -1166,7 +1166,6 @@ function read_in() {
     // 読み込んだテキストの内容を、div 要素 (IDは 'timeline_container') の中身
     // として書き出す。
     document.getElementById('timeline_container').innerHTML = e.target.result;
-    // **** TO DO **** SVGの各要素を読み取って、変数の設定を行う。
     set_read_values();
   }
   // テキストファイルとして読み込む。
@@ -1257,9 +1256,118 @@ function set_read_values() {
   // データが優先。
   // (b) 読み取ったデータにのみ含まれるテーマは、そのまま残す。
   // (c) 読み取ったデータになく themes.js にのみあるテーマを追加する。
+  // ……という方針にしたいので、基本的には読み取ったデータはそのまま放置し
+  // (明示的には何もしないことによって (a) と (b) を達成し)、(c) のみ明示的に
+  // 実行する。
   const  style_elt = document.getElementById('theme_style_def'),
-    grad_elt = document.getElementById('gradient_def');
-  // *** TO DO *** あとで実装する
+    defs_elt = document.getElementById('gradient_def'),
+    stop_L_offset_str = CONFIG.fading_region_ratio + '%',  // '15%' となる
+    stop_R_offset_str = 
+      parseInt(100 - CONFIG.fading_region_ratio).toString() +'%';  // '85%';
+  COLOR_THEMES.forEach(th => {
+    // この配色テーマで、出来事を表す円のための CSS 規則がなければ追加する。
+    const circle_class_re = new RegExp('circle.' + th.id + '\\s*\\{.+\\}');
+    //console.log('circle_class_re=' + circle_class_re);
+    if (! circle_class_re.test(style_elt.innerHTML)) {
+      style_elt.innerHTML += ('\n' + 'circle.' + th.id + ' { fill: ' + 
+        th.circle_fill + '; stroke: ' + th.circle_stroke + '; }\n');
+    }
+    // この配色テーマで、年を表すテキストのための CSS 規則がなければ追加する。
+    const text_class_re = new RegExp('text.' + th.id + '\\s*\\{.+\\}');
+    if (! text_class_re.test(style_elt.innerHTML)) {
+      style_elt.innerHTML += ('\n' + 'text.' + th.id +
+        ' { fill: ' + th.text_fill + '; }\n');
+    }
+    // 左右両端のグラデーション有無による合計 4 パタンの linearGradient 要素の
+    // それぞれについて、有無を調べ、なければ追加する。
+    add_grad_if_not_exists(true, true, th);
+    add_grad_if_not_exists(true, false, th);
+    add_grad_if_not_exists(false, true, th);
+    add_grad_if_not_exists(false, false, th);
+    // なお、配色テーマを選択肢とするセレクタは更新無用である。
+    // なぜなら、第一に、window.top.onload から関数 reset_svg が呼ばれ、そこから
+    // 関数 set_theme_defs が呼ばれ、その中で COLOR_THEMES の各要素に相当する
+    // 選択肢が追加されているから。
+    // そして第二に、COLOR_THEMES で定義されていない配色テーマで、読み込んだ
+    // ファイル内の linearGradient 要素に相当するものは、セレクタの選択肢として
+    // 追加する必要がない、と判断したから (そのような配色テーマは、themes.js から
+    // 既存の配色テーマの定義を削除しない限りは、ユーザが手作業で編集したことに
+    // よって生じたものに限定される筈である。そういう自由度の高いものまでをも、
+    // 今から行う続きの編集作業のために選択肢として用意しておくべきかどうかは
+    // 疑問である。仮にそれを使いたければ、またユーザが後で手作業で編集すればよい
+    // だけである。選択肢に反映されなくても、現にその配色テーマが指定されている
+    // 要素はその配色テーマの定義に従って表示される筈だから、上記 (b) の方針には
+    // かなっている)。
+  });
+
+  // 上記 (3) の処理のための関数定義。
+  // 関数 set_theme_defs の内部関数 add_grad とほぼ同じなので、いずれまとめる
+  // かもしれない。が、微妙に違う部分をパラメタで切り分けるよりはこのままの方が
+  // 良いかもしれない。あとで考えよう。
+  function add_grad_if_not_exists(left_open, right_open, color_theme) {
+    let grad_id = color_theme.id;
+    grad_id += (left_open ? '_open' : '_closed');
+    grad_id += (right_open ? '_open' : '_closed');
+    let grad = document.getElementById(grad_id);
+    if (grad !== null) {
+      if (grad.tagName.toLowerCase() === 'lineargradient') {
+        return;
+      } else {
+        alert('Unexpected error: <' + grad.tagName + '> element with the ID "' + 
+          grad_id +'" is found.');
+        return;
+      }
+    }
+    // 以下は、指定された配色テーマかつ指定されたグラデーションのパタンでの
+    // linearGradient 要素が存在しない場合にのみ実行される。
+    grad = document.createElementNS(SVG_NS, 'linearGradient');
+    //console.log('grad_id=' + grad_id);
+    grad.setAttribute('id', grad_id);
+    add_text_node(grad, '\n');
+    // 左側
+    // 左端 (左端から 0% の場所) の stop 要素
+    const stop_0 = document.createElementNS(SVG_NS, 'stop');
+    stop_0.setAttribute('offset', '0%');
+    if (left_open) {
+      stop_0.setAttribute('stop-opacity', color_theme.bar_fading_end_opacity);
+      stop_0.setAttribute('stop-color', color_theme.bar_color);
+      grad.appendChild(stop_0);  add_text_node(grad, '\n');
+      // 左端からのグラデーションの部分と、それより中心側のべた塗りの部分との
+      // 境界に当たる stop 要素
+      const stop_L = document.createElementNS(SVG_NS, 'stop');
+      stop_L.setAttribute('offset', stop_L_offset_str);
+      stop_L.setAttribute('stop-opacity', color_theme.bar_body_opacity);
+      stop_L.setAttribute('stop-color', color_theme.bar_color);
+      grad.appendChild(stop_L);  add_text_node(grad, '\n');
+    } else {
+      stop_0.setAttribute('stop-opacity', color_theme.bar_body_opacity);
+      stop_0.setAttribute('stop-color', color_theme.bar_color);
+      grad.appendChild(stop_0);  add_text_node(grad, '\n');
+    }
+    // 右側
+    // 右端 (左端から 100% の場所) の stop 要素
+    const stop_100 = document.createElementNS(SVG_NS, 'stop');
+    stop_100.setAttribute('offset', '100%');
+    if (right_open) {
+      // 右端からのグラデーションの部分と、それより中心側のべた塗りの部分との
+      // 境界に当たる stop 要素
+      const stop_R = document.createElementNS(SVG_NS, 'stop');
+      stop_R.setAttribute('offset', stop_R_offset_str);
+      stop_R.setAttribute('stop-opacity', color_theme.bar_body_opacity);
+      stop_R.setAttribute('stop-color', color_theme.bar_color);
+      grad.appendChild(stop_R);  add_text_node(grad, '\n');
+      stop_100.setAttribute('stop-opacity', color_theme.bar_fading_end_opacity);
+      stop_100.setAttribute('stop-color', color_theme.bar_color);
+      grad.appendChild(stop_100);  add_text_node(grad, '\n');
+    } else {
+      stop_100.setAttribute('stop-opacity', color_theme.bar_body_opacity);
+      stop_100.setAttribute('stop-color', color_theme.bar_color);
+      grad.appendChild(stop_100);  add_text_node(grad, '\n');
+    }
+    add_text_node(defs_elt, '\n');
+    defs_elt.appendChild(grad);
+    add_text_node(defs_elt, '\n');
+  }
 
   // (4) 各期間の確認と、(5) 出来事の確認。
   const timeline_body_elt = document.getElementById('timeline_body'),
