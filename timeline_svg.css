@@ -22,3 +22,16 @@ line.header {
   stroke-width: 2;
   stroke: hsl(230, 70%, 40%);
 }
+
+text.arrow {
+  fill: hsl(0, 0%, 15%);
+  font-family: serif;
+  font-size: 16px;
+}
+rect.arrow {
+  fill: white;
+}
+path.arrow {
+  stroke-width: 4;
+  fill: none;
+}
