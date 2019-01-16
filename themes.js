@@ -112,3 +112,28 @@ const COLOR_THEMES = [
     text_fill: 'hsl(245, 80%, 30%)'
   }
 ];
+
+const ARROW_COLORS = [
+/*
+  { id: '',
+    name: {ja: '', en: '' },
+    arrow_color: 'hsl(, %, %)'
+  },
+*/
+  { id: 'dark_gray',
+    name: {ja: '濃灰色', en: 'dark gray' },
+    arrow_color: 'hsl(0, 0%, 25%)'
+  },
+  { id: 'dark_red',
+    name: {ja: '暗赤色', en: 'dark red' },
+    arrow_color: 'hsl(340, 75%, 30%)'
+  },
+  { id: 'dark_blue',
+    name: {ja: '紺色', en: 'dark blue' },
+    arrow_color: 'hsl(220, 50%, 30%)'
+  },
+  { id: 'dark_green',
+    name: {ja: '深緑', en: 'dark green' },
+    arrow_color: 'hsl(100, 40%, 25%)'
+  }
+];
