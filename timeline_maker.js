@@ -876,6 +876,26 @@ function re_define_period() {
 
   if (! check_year_range(new_start_year, new_end_year)) { return; }
 
+  // この期間を始点または終点とする矢印があり、かつ、期間の範囲を変更すると
+  // その矢印のある年が期間の範囲外になる場合は、期間の範囲を変更してよいかを
+  // 確認する。
+  let associated_arrows = new Array();
+  TIMELINE_DATA.arrows.forEach((dat, aid, m) => {
+    if ((dat.start_period_id === pid || dat.end_period_id === pid) &&
+        (dat.arrowed_year < new_start_year || 
+                            new_end_year < dat.arrowed_year)) {
+      associated_arrows.push(aid);
+    }
+  });
+  if (associated_arrows.length > 0) {
+    const msg = {ja: 'この期間を始点または終点とする矢印で、変更後の期間の範囲外になってしまうものがあります。\n期間の範囲を変更するとその矢印を削除します。\n期間の範囲を変更してよければ [OK] を選んでください。',
+                 en: 'There is at least one arrow that now starts from or ends at this period but will be out of the range of this period if the range is changed as you specify.\nWhen the range is changed, such an arrow will be deleted.\nSelect [OK] only when you do want to change the range of this period.'};
+    if (! confirm(msg[LANG])) { return; }
+    // ここに来るのは実際にこの期間の範囲を変更したいときだけ。
+    // この場合、矢印も削除する。
+    associated_arrows.forEach(aid => { remove_arrow_0(aid); });
+  }
+
   if (new_start_year < TIMELINE_DATA.min_year) {
     put_min_year_backwards(new_start_year);
   }
