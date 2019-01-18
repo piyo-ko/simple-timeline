@@ -1506,10 +1506,97 @@ function read_in() {
     // 読み込んだテキストの内容を、div 要素 (IDは 'timeline_container') の中身
     // として書き出す。
     document.getElementById('timeline_container').innerHTML = e.target.result;
+    check_svg_skeleton();
+    set_theme_defs();
+    set_arrow_color_defs();
     set_read_values();
   }
   // テキストファイルとして読み込む。
   reader.readAsText(document.getElementById('input_svg_file').files[0]);
+}
+
+/* 「作成済みのデータを読み込む」メニューで使う簡易チェック。
+svg 要素の子要素として存在することを前提としているいくつかの要素の有無を順に
+チェックして、存在していなければ追加する。ただし id の値だけで判断していて
+tagName は見ていないので、チェックとしてはゆるゆる。 */
+function check_svg_skeleton() {
+  const svg = document.getElementById('timeline');
+  if (svg === null) {
+    alert('Unexpected error: No SVG element whose ID is "timeline"');
+    return;
+  }
+
+  let nl;
+
+  let theme_style_def = document.getElementById('theme_style_def');
+  if (theme_style_def === null) {
+    theme_style_def = document.createElementNS(SVG_NS, 'style');
+    theme_style_def.id = 'theme_style_def';
+    const styles = svg.getElementsByTagNameNS(SVG_NS, 'style');
+    if (styles.length === 0) {
+      const default_style = document.createElementNS(SVG_NS, 'style');
+      default_style.innerHTML = '<![CDATA[ @import url(timeline_svg.css); ]]>';
+      svg.insertBefore(default_style, svg.firstChild);
+      nl = document.createTextNode('\n');
+      svg.insertBefore(nl, default_style.nextSibling);
+      svg.insertBefore(theme_style_def, nl.nextSibling);
+    } else {
+      svg.insertBefore(theme_style_def, styles[0].nextSibling);
+    }
+    nl = document.createTextNode('\n');
+    svg.insertBefore(nl, theme_style_def.nextSibling);
+  }
+
+  let gradient_def = document.getElementById('gradient_def');
+  if (gradient_def === null) {
+    gradient_def = document.createElementNS(SVG_NS, 'defs');
+    gradient_def.id = 'gradient_def';
+    const styles = svg.getElementsByTagNameNS(SVG_NS, 'style');
+    svg.insertBefore(gradient_def, styles[styles.length - 1].nextSibling);
+    nl = document.createTextNode('\n');
+    svg.insertBefore(nl, gradient_def.nextSibling);
+  }
+
+  let arrow_def = document.getElementById('arrow_def');
+  if (arrow_def === null) {
+    arrow_def = document.createElementNS(SVG_NS, 'defs');
+    arrow_def.id = 'arrow_def';
+    svg.insertBefore(arrow_def, gradient_def.nextSibling);
+    nl = document.createTextNode('\n');
+    svg.insertBefore(nl, arrow_def.nextSibling);
+  }
+
+  let header_and_v_bars = document.getElementById('header_and_v_bars');
+  if (header_and_v_bars === null) {
+    header_and_v_bars = document.createElementNS(SVG_NS, 'g');
+    header_and_v_bars.id = 'header_and_v_bars';
+    const gs = svg.getElementsByTagNameNS(SVG_NS, 'g');
+    if (gs.length === 0) {
+      svg.insertBefore(header_and_v_bars, arrow_def.nextSibling);
+    } else {
+      svg.insertBefore(header_and_v_bars, gs[0]);
+    }
+    nl = document.createTextNode('\n');
+    svg.insertBefore(nl, header_and_v_bars.nextSibling);
+  }
+
+  let timeline_body = document.getElementById('timeline_body');
+  if (timeline_body === null) {
+    timeline_body = document.createElementNS(SVG_NS, 'g');
+    timeline_body.id = 'timeline_body';
+    svg.insertBefore(timeline_body, header_and_v_bars.nextSibling);
+    nl = document.createTextNode('\n');
+    svg.insertBefore(nl, timeline_body.nextSibling);
+  }
+
+  let arrow_container = document.getElementById('arrow_container');
+  if (arrow_container === null) {
+    arrow_container = document.createElementNS(SVG_NS, 'g');
+    arrow_container.id = 'arrow_container';
+    svg.insertBefore(arrow_container, timeline_body.nextSibling);
+    nl = document.createTextNode('\n');
+    svg.insertBefore(nl, arrow_container.nextSibling);
+  }
 }
 
 /* 「作成済みのデータを読み込む」メニュー。 */
@@ -1517,6 +1604,7 @@ function set_read_values() {
   // (1) セレクタの選択肢を初期化。フォームの各入力もリセットしておく。
   PERIOD_SELECTORS.forEach(sel => { remove_all_children(sel); });
   EVENT_SELECTORS.forEach(sel => { remove_all_children(sel); });
+  ARROW_SELECTORS.forEach(sel => { remove_all_children(sel); });
   const menu = document.menu, which_row = menu.which_row;
   remove_all_children(which_row);
   menu.reset();
@@ -1818,7 +1906,63 @@ function set_read_values() {
   // 出来事についても同様。
   TIMELINE_DATA.next_event_id = next_event_id;
 
-  // (6) 縦の目盛線と横罫線を再描画する (妥当性を確認するよりも強制的に再描画
+  // (6) 矢印の確認。
+  const arrow_container = document.getElementById('arrow_container'),
+    arrow_g_elts = arrow_container.children,
+    a_num = arrow_g_elts.length;
+  let next_arrow_id = 0;
+  for (let i = 0; i < a_num; i++) {
+    const cur_g = arrow_g_elts[i];
+    if (cur_g.tagName !== 'g' && cur_g.tagName !== 'G') {
+      continue;
+    }
+    const cur_g_id = cur_g.getAttribute('id'),
+      aid_m = cur_g_id.match(/^a_(\d+)_g$/);
+    if (aid_m === null || aid_m.length !== 2) {
+      const msg = {ja: cur_g_id + 'は不正なIDです', 
+                   en: cur_g_id + ' is an illegal ID.'};
+      alert(msg[LANG]);  reset_svg();  return;
+    }
+    const aid_num = parseInt(aid_m[1]), // ID の数字部分を取り出す。
+      cur_aid = 'a_' + aid_num,
+      cur_path = document.getElementById(cur_aid),
+      cur_rect = document.getElementById(cur_aid + '_r'),
+      cur_text = document.getElementById(cur_aid + '_t');
+    if (next_arrow_id <= aid_num) { next_arrow_id = aid_num + 1; }
+    if (cur_path === null || cur_rect === null || cur_text === null) {
+      const msg = {ja: '矢印 ' + cur_aid + ' の部品が見つかりません',
+                   en: 'One or more parts of arrow ' + cur_aid + ' are missing.'};
+       alert(msg[LANG]);  reset_svg();  return;
+    }
+    const start_period_id = cur_g.dataset.start_period_id,
+      end_period_id = cur_g.dataset.end_period_id,
+      arrowed_year = parseInt(cur_g.dataset.arrowed_year),
+      x_center = parseInt(cur_g.dataset.x_center),
+      y_start = parseInt(cur_g.dataset.y_start),
+      y_end = parseInt(cur_g.dataset.y_end);
+    let valid_data = true;
+    [start_period_id, end_period_id].forEach(x => {
+      if (x === null || x === undefined) { valid_data = false; return; }
+      if (! TIMELINE_DATA.periods.has(x)) { valid_data = false; }
+    });
+    [arrowed_year, x_center, y_start, y_end].forEach(x => {
+      if (x === null || x === undefined || isNaN(x)) { valid_data = false; }
+    });
+    if (! valid_data) {
+      const msg = {ja: '矢印 ' + cur_aid + ' のデータが不正です',
+                   en: 'Invalid data for arrow ' + cur_aid};
+       alert(msg[LANG]);  reset_svg();  return;
+    }
+    const a_dat = new arrow_data(start_period_id, end_period_id, x_center, y_start, y_end);
+    TIMELINE_DATA.arrows.set(cur_aid, a_dat);
+    const label_txt = '[' + arrowed_year + '] ' + cur_text.textContent;
+    ARROW_SELECTORS.forEach(sel => {
+      add_selector_option(sel, cur_aid, label_txt);
+    });
+  }
+  TIMELINE_DATA.next_arrow_id = next_arrow_id;
+
+  // (7) 縦の目盛線と横罫線を再描画する (妥当性を確認するよりも強制的に再描画
   // する方が楽で確実なので)。
   // ただし、TIMELINE_DATA.v_bars の設定だけは先にしておく (そうしないと同じ年の
   // 目盛線が重複して作られてしまうため)。
