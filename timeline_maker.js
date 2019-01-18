@@ -1433,7 +1433,7 @@ function set_read_values() {
   if (illegal_height) {
     const msg = {ja: '高さと行数が不整合です',
                  en: 'The height is inconsistent with the maximum row number.'};
-    console.log(`svg_height=${svg_height}, body_h=${body_h}, r=${r}`);
+    console.log(`svg_height=${svg_height}, body_h=${body_h}`);
     alert(msg[LANG]);  reset_svg();  return;
   }
 
