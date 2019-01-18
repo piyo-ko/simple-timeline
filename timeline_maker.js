@@ -276,10 +276,11 @@ function set_theme_defs() {
     stop_R_offset_str = 
       parseInt(100 - CONFIG.fading_region_ratio).toString() +'%';  // '85%'
   function add_grad(left_open, right_open, id) {
-    const grad = document.createElementNS(SVG_NS, 'linearGradient');
     let grad_id = id;
     grad_id += (left_open ? '_open' : '_closed');
     grad_id += (right_open ? '_open' : '_closed');
+    if (document.getElementById(grad_id)) { return; } // 既存なら何もしない。
+    const grad = document.createElementNS(SVG_NS, 'linearGradient');
     grad.setAttribute('id', grad_id);
     add_text_node(grad, '\n');
     // 左側
