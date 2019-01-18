@@ -161,6 +161,17 @@
 </tr>
 
 <tr>
+<th>矢印のラベルの<wbr>位置を<wbr>調整</th>
+<td>
+<select name="label_positioning_target" id="label_positioning_target" onchange="set_current_arrow_label_pos()"></select>
+のラベルの位置を動かす。
+<label>[上
+<input type="range" name="label_pos_slider" id="label_pos_slider" step="1" min="0" max="100" oninput="apply_changed_arrow_label_pos()" />
+下]</label>
+</td>
+</tr>
+
+<tr>
 <th>矢印を<wbr>削除</th>
 <td>
 <select name="arrow_to_remove" id="arrow_to_remove"></select> を

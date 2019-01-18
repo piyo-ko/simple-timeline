@@ -132,6 +132,7 @@ window.top.onload = function () {
    m.start_point_of_arrow, m.end_point_of_arrow]
    .forEach(sel => { PERIOD_SELECTORS.add(sel); });
   EVENT_SELECTORS.add(m.event_to_remove);
+  ARROW_SELECTORS.add(m.label_positioning_target);
   ARROW_SELECTORS.add(m.arrow_to_remove);
 
   reset_svg();
@@ -1352,6 +1353,44 @@ function add_arrow() {
   ARROW_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_aid, '[' + arrowed_year + '] ' + arrow_label);
   });
+}
+
+
+/*
+「矢印のラベルの位置を調整」メニュー用。
+矢印が選択されると実行される。範囲指定用のスライダ要素に対して、
+ユーザがスライダを動かし始める前の初期値 (現在の値) を設定する。
+*/
+function set_current_arrow_label_pos() {
+  const aid = selected_choice(document.menu.label_positioning_target),
+    y_cur = parseInt(document.getElementById(aid + '_r').getAttribute('y'))
+            + Math.round(CONFIG.font_size / 2),
+    g = document.getElementById(aid + '_g'),
+    y_start = parseInt(g.dataset.y_start),
+    y_end = parseInt(g.dataset.y_end),
+    y_min = Math.min(y_start, y_end),
+    y_max = Math.max(y_start, y_end),
+    p = Math.round((y_cur - y_min) / (y_max - y_min) * 100);
+  document.menu.label_pos_slider.value = p;
+}
+
+/*
+「矢印のラベルの位置を調整」メニュー用。
+スライダ要素の値が変化すると実行される。ユーザがスライダを動かすと、その動きに
+合わせて、ラベルの位置を上下に動かす。
+*/
+function apply_changed_arrow_label_pos() {
+  const aid = selected_choice(document.menu.label_positioning_target),
+    p = parseInt(document.menu.label_pos_slider.value),
+    g = document.getElementById(aid + '_g'),
+    y_start = parseInt(g.dataset.y_start),
+    y_end = parseInt(g.dataset.y_end),
+    y_min = Math.min(y_start, y_end),
+    y_max = Math.max(y_start, y_end),
+    new_y = parseInt(y_min + (y_max - y_min) * p / 100)
+            - Math.round(CONFIG.font_size / 2);
+  document.getElementById(aid + '_t').setAttribute('y', new_y);
+  document.getElementById(aid + '_r').setAttribute('y', new_y);
 }
 
 /* 「矢印を削除」メニュー。 */
