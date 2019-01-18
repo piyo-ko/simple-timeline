@@ -489,10 +489,12 @@ function check_year_range(start_year, end_year) {
                  en: 'Enter an integer for the end year.'};
     alert(msg[LANG]);  return(false);
   }
-  if (end_year <= start_year) {
+  if (end_year < start_year) {
+    // 年をまたがない、1年以下の期間も存在しうるので、
+    // end_year === start_year という入力は許す
     const msg = {
-      ja: '開始年以前の終了年を指定しないでください',
-      en: 'Do not enter the end year that is earlier than or equal to the start year.'
+      ja: '開始年より前の終了年を指定しないでください',
+      en: 'Do not enter the end year that is earlier than the start year.'
     };
     alert(msg[LANG]);  return(false);
   }
@@ -600,6 +602,14 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
   g.appendChild(label_txt);  add_text_node(g, '\n');
 
   timeline_body_elt.appendChild(g);  add_text_node(timeline_body_elt, '\n');
+
+  // 開始年と終了年が同じで、その年の text 要素が二つある場合は、座標を揃える
+  // (微妙に座標がずれていると見づらいので)。
+  if ((start_year === end_year) && 
+      (! typ.left_end_open) && (! typ.right_end_open)) {
+    document.getElementById(new_pid + '_start_year').setAttribute('x',
+      document.getElementById(new_pid + '_end_year').getAttribute('x'));
+  }
 
   const p_dat = new period_data(start_year, end_year, which_row, color_theme, gradient_def_name);
   TIMELINE_DATA.periods.set(new_pid, p_dat);
