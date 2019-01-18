@@ -7,7 +7,8 @@ let LANG = 'ja';
 
 /* 入力フォーム中の期間・出来事を表すセレクタを要素とする配列。
 実際の中身は、window.top.onload で設定する。 */
-const PERIOD_SELECTORS = new Set(), EVENT_SELECTORS = new Set();
+const PERIOD_SELECTORS = new Set(), EVENT_SELECTORS = new Set(),
+  ARROW_SELECTORS = new Set();
 
 /* 各期間について管理するためのオブジェクト */
 class period_data {
@@ -22,6 +23,16 @@ class period_data {
   }
 }
 
+/* 矢印について管理するためのオブジェクト */
+class arrow_data {
+  constructor(start_period_id, end_period_id, arrowed_year, x_center, y_start, y_end) {
+    this.start_period_id = start_period_id; this.end_period_id = end_period_id;
+    this.arrowed_year = arrowed_year; this.x_center = x_center; 
+    this.y_start = y_start; this.y_end = y_end;
+  }
+  print() { console.log(JSON.stringify(this)); }
+}
+
 /* デバッグ対象の関数に対応するプロパティを 0 以上の値に設定すること。 */
 const MODE = {
   f_add_period: 0,  f_update_v_bars: 0,  f_remove_period: 0
@@ -29,18 +40,19 @@ const MODE = {
 
 /* 年表全体の現状を管理する大域オブジェクト。 */
 var TIMELINE_DATA = TIMELINE_DATA || {
-  next_period_id: 0,  next_event_id: 0, 
+  next_period_id: 0,  next_event_id: 0, next_arrow_id: 0,
   max_row_num: 0,  // 1 行目は 1 と数える。0 は何も期間がないことを表す。
   svg_width: 0,  svg_height: 0,
   init_state: true,
   periods: new Map(),  events: new Map(),  v_bars: new Set(),
+  arrows: new Map(),
   min_year: 9999,  max_year: -9999,    // 初期値
   reset_all: function () {
     this.next_period_id = 0;  this.next_event_id = 0;  this.max_row_num = 0;
     this.svg_width = 0;  this.svg_height = 0;
     this.init_state = true;
     this.periods = new Map();  this.events = new Map();
-    this.v_bars = new Set();
+    this.v_bars = new Set();  this.arrows = new Map();
     this.min_year = 9999;  this.max_year = -9999;
   },
   print: function() {
@@ -53,6 +65,10 @@ var TIMELINE_DATA = TIMELINE_DATA || {
     console.log(  'events:');
     this.events.forEach((dat, eid, m) => {
       console.log(`  ${eid}: ${JSON.stringify(dat)} ,\n`);
+    });
+    console.log(  'arrows:');
+    this.arrows.forEach((dat, aid, m) => {
+      console.log(`  ${aid}: ${JSON.stringify(dat)} ,\n`);
     });
     let s =   'v_bars: ';
     this.v_bars.forEach(year => { s += year + ','; });
@@ -90,7 +106,10 @@ const CONFIG = {
   // 出来事を表す円の半径
   circle_radius: 16,
   // 年からピクセルへの変換倍率
-  year_to_px_factor: 20
+  year_to_px_factor: 20,
+  //
+  arrow_width: 2,
+  arrow_head_protrusion: 6
 };
 
 /* ページのロード (リロードも含む) の際に行う初期化。 */
@@ -109,7 +128,8 @@ window.top.onload = function () {
 
   [m.period_to_re_label, m.period_to_re_color, 
    m.period_to_re_define, m.period_to_move, m.period_to_remove, 
-   m.period_including_this_event]
+   m.period_including_this_event, 
+   m.start_point_of_arrow, m.end_point_of_arrow]
    .forEach(sel => { PERIOD_SELECTORS.add(sel); });
   EVENT_SELECTORS.add(m.event_to_remove);
 
@@ -165,6 +185,29 @@ function rect_y_to_row_num(y) {
   const row_start_y = y - CONFIG.v_margin_within_row - CONFIG.font_size;
   return((row_start_y - CONFIG.header_row_height) / CONFIG.row_height + 1);
 }
+/* 矢印の始点側の期間がある行の番号と、矢印の終点側の期間がある行の番号と、
+両向き矢印かどうかという真偽値とを引数にとり、始点と終点の y 座標のペアを
+返す。 */
+function row_nums_to_arrow_y_vals(start_row, end_row, is_double_headed) {
+  //console.log('row_nums_to_arrow_y_vals(' + start_row + ', ' + end_row + ', ' + is_double_headed + ')\n');
+  const half_h = Math.round(CONFIG.bar_height / 2);
+  let y_start = row_num_to_rect_y(start_row) + half_h, 
+      y_end = row_num_to_rect_y(end_row) + half_h;
+  if (is_double_headed) { // 両向き矢印
+    if (start_row < end_row) {
+      y_start += CONFIG.arrow_head_protrusion;  // 上にある
+      y_end -= CONFIG.arrow_head_protrusion;    // 下にある
+    } else {
+      y_start -= CONFIG.arrow_head_protrusion;  // 下にある
+      y_end += CONFIG.arrow_head_protrusion;    // 上にある
+    }
+  } else if (start_row < end_row) { // 上から下への矢印
+    y_end -= CONFIG.arrow_head_protrusion;  // 下にある
+  } else { // 下から上への矢印
+    y_end += CONFIG.arrow_head_protrusion;  // 上にある
+  }
+  return({ y_start: y_start, y_end: y_end });
+}
 
 /* 年を表示するための text 要素の textLength 属性に設定すべき値を求める。 */
 function year_txt_len(year) {
@@ -186,9 +229,11 @@ function rect_type(start_year_type, end_year_type) {
 /* svg 要素を初期状態に戻してから、配色テーマを読み取ってその定義を追加する。 */
 function reset_svg() {
   resize_svg(0, 0);
-  ['theme_style_def', 'gradient_def', 'header_and_v_bars', 'timeline_body']
+  ['theme_style_def', 'gradient_def', 'arrow_def', 
+   'header_and_v_bars', 'timeline_body', 'arrow_container']
     .forEach(id => { document.getElementById(id).innerHTML = ''; });
   set_theme_defs();
+  set_arrow_color_defs();
 }
 
 /* svg 要素の大きさを変更する。 */
@@ -201,7 +246,7 @@ function resize_svg(w, h) {
 /* themes.js に定義されている配色テーマの定義を読み取り、svg 要素内にその定義を
 反映させ、配色テーマ用のセレクタに選択肢を追加する。 */
 function set_theme_defs() {
-  if (! check_theme_ids()) {
+  if (! check_theme_ids(COLOR_THEMES)) {
     alert('Error in themes.js.\nPlease correct themes.js.');  return(false);
   }
 
@@ -298,16 +343,53 @@ function set_theme_defs() {
   });
 }
 
-/* 配色テーマの定義に使われる ID についての簡易チェック。 */
-function check_theme_ids() {
+/* 配色テーマまたは矢印の色の定義に使われる ID についての簡易チェック。 */
+function check_theme_ids(target_def_arr) {
   // ID に重複がないことを確認
-  const ids = COLOR_THEMES.map(th => { return(th.id); }).sort(), L = ids.length;
+  const ids = target_def_arr.map(th => { return(th.id); }).sort(), 
+    L = ids.length;
   for (let i = 0; i < L-1; i++) { if (ids[i] === ids[i+1]) { return(false); } }
   // ID の形式を確認
   const re = /^[a-zA-Z_]\w*$/;
   for (let i = 0; i < L; i++) { if (! re.test(ids[i]))  { return(false); } }
   // ここに来るのは問題がない場合のみ
   return(true);
+}
+
+/* themes.js に定義されている矢印の色の定義を読み取り、svg 要素内にその定義を
+反映させる。また、矢印の色のセレクタに選択肢を追加する。 */
+function set_arrow_color_defs() {
+  if (! check_theme_ids(ARROW_COLORS)) {
+    alert('Error in themes.js.\nPlease correct themes.js.');  return(false);
+  }
+
+  remove_all_children(document.menu.arrow_color);
+
+  const defs_elt = document.getElementById('arrow_def');
+  ARROW_COLORS.forEach(ac => {
+    // 既存なら何もしない
+    if (document.getElementById(ac.id + '_arrow_head')) { return; }
+
+    const marker = document.createElementNS(SVG_NS, 'marker');
+    [['id', ac.id + '_arrow_head'],  ['markerUnits', 'strokeWidth'],
+     ['markerWidth', 4], ['markerHeight', 4],
+     ['viewBox', '0 0 8 8'], ['refX', 4], ['refY', 4],
+     ['orient', 'auto-start-reverse']].forEach((k_v) => {
+      marker.setAttribute(k_v[0], k_v[1]);
+    });
+    add_text_node(defs_elt, '\n');
+    defs_elt.appendChild(marker);
+    add_text_node(defs_elt, '\n');
+    const polygon = document.createElementNS(SVG_NS, 'polygon');
+
+    add_text_node(marker, '\n  ');
+    polygon.setAttribute('points', '0,0 8,4 0,8 2,4');
+    polygon.setAttribute('fill', ac.arrow_color);
+    marker.appendChild(polygon);
+    add_text_node(marker, '\n');
+
+    add_selector_option(document.menu.arrow_color, ac.id, ac.name[LANG]);
+  });
 }
 
 /* SVG 要素 (rect, line, circle) を移動させる。 */
@@ -1144,6 +1226,130 @@ function remove_event() {
   g.parentNode.removeChild(g);
   EVENT_SELECTORS.forEach(sel => { remove_choice(sel, eid); });
   TIMELINE_DATA.events.delete(eid);
+}
+
+/* 「矢印を追加」メニュー。 */
+function add_arrow() {
+  const new_aid = 'a_' + TIMELINE_DATA.next_arrow_id++;
+
+  const m = document.menu,
+    arrow_label = m.arrow_label.value,
+    start_point_of_arrow = selected_choice(m.start_point_of_arrow),
+    start_period_dat = TIMELINE_DATA.periods.get(start_point_of_arrow),
+    end_point_of_arrow = selected_choice(m.end_point_of_arrow),
+    end_period_dat = TIMELINE_DATA.periods.get(end_point_of_arrow),
+    arrow_shape = selected_radio_choice(m.arrow_shape),
+    arrow_color = selected_choice(m.arrow_color),
+    arrowed_year = parseInt(m.arrowed_year.value);
+
+  m.arrow_label.value = m.arrowed_year.value = '';
+  if (arrow_label === '') {
+    const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
+    alert(msg[LANG]);  return;
+  }
+  if (start_point_of_arrow === end_point_of_arrow) {
+    const msg = {ja: '別々の期間を指定してください',
+                 en: 'Select two different periods.' };
+    alert(msg[LANG]);  return;
+  }
+  if (isNaN(arrowed_year)) {
+    const msg = {ja: '矢印を描く年を整数で入力してください',
+                 en: 'Enter an integer for the year at which the new arrow is to be positioned.'};
+    alert(msg[LANG]);  return;
+  }
+  if (start_period_dat === undefined || end_period_dat === undefined) {
+    alert('Unexpected error: No data for the selected period.');
+    return;
+  }
+  if (start_period_dat.row === end_period_dat.row) {
+    const msg = {ja: '同じ段にある期間同士の間には矢印を描画できません',
+                 en: 'Cannot draw a vertical arrow between two periods located in the same horizontal row.'};
+    alert(msg[LANG]);  return;
+  }
+  if (! start_period_dat.is_included(arrowed_year)) {
+    const msg = {ja: '矢印の始点側の期間の範囲外の年が指定されています',
+                 en: 'The specified year is out of the range of the period at the start point of the arrow.'};
+    alert(msg[LANG]);  return;
+  }
+  if (! end_period_dat.is_included(arrowed_year)) {
+    const msg = {ja: '矢印の終点側の期間の範囲外の年が指定されています',
+                 en: 'The specified year is out of the range of the period at the end point of the arrow.'};
+    alert(msg[LANG]);  return;
+  }
+
+  const arrow_container_elt = document.getElementById('arrow_container'),
+    g = document.createElementNS(SVG_NS, 'g'),
+    title = document.createElementNS(SVG_NS, 'title'),
+    path = document.createElementNS(SVG_NS, 'path'),
+    rect = document.createElementNS(SVG_NS, 'rect'),
+    text = document.createElementNS(SVG_NS, 'text');
+
+  add_text_node(arrow_container_elt, '\n');
+  arrow_container_elt.appendChild(g);
+  add_text_node(arrow_container_elt, '\n');
+  add_text_node(g, '\n');  g.appendChild(title);
+  add_text_node(g, '\n');  g.appendChild(path);  //add_text_node(g, '\n');
+  add_text_node(g, '\n');  g.appendChild(rect);  //add_text_node(g, '\n');
+  add_text_node(g, '\n');  g.appendChild(text);  add_text_node(g, '\n');
+
+  //g.setAttribute('id', new_aid + '_g');
+  g.id = new_aid + '_g';
+  title.id = new_aid + '_label';
+  add_text_node(title, '(' + arrowed_year + ')');
+
+  const y_vals = row_nums_to_arrow_y_vals(start_period_dat.row, 
+                   end_period_dat.row, (arrow_shape === 'double_headed')),
+    y_start = y_vals.y_start, y_end = y_vals.y_end;
+
+  const x_center = year_to_x(arrowed_year) + 
+                   Math.round(CONFIG.year_to_px_factor / 2),
+    marker_url = 'url(#' + arrow_color + '_arrow_head)',
+    d_str = 'M ' + x_center + ',' + y_start + 
+            ' l 0,' + (y_end - y_start).toString(),
+    stroke_color = ARROW_COLORS.find(dat => {
+      return(dat.id === arrow_color); }).arrow_color;
+  [['id', new_aid], ['class', 'arrow'], ['marker-end', marker_url],
+   ['d', d_str], ['stroke', stroke_color]].forEach((k_v) => { 
+    path.setAttribute(k_v[0], k_v[1]);
+  });
+  if (arrow_shape === 'double_headed') {
+    path.setAttribute('marker-start', marker_url);
+  }
+
+  const y_label_top = Math.round((y_start + y_end) / 2 - CONFIG.font_size / 2),
+    label_width = arrow_label.length * CONFIG.font_size,
+    x_label_left = x_center - Math.round(label_width / 2);
+/*
+  console.log('y_start: ' + y_start);
+  console.log('y_end: ' + y_end);
+  console.log('y_label_top: ' + y_label_top);
+  console.log('label_width: ' + label_width);
+*/
+  [['id', new_aid + '_r'], ['class', 'arrow'],
+   ['x', x_label_left], ['y', y_label_top],
+   ['width', label_width], ['height', CONFIG.font_size]].forEach((k_v) => {
+    rect.setAttribute(k_v[0], k_v[1]);
+  });
+  [['id', new_aid + '_t'], ['class', 'arrow'],
+   ['x', x_label_left], ['y', y_label_top],
+   ['dx', 0], ['dy', CONFIG.font_size],
+   ['textLength', label_width]].forEach((k_v) => {
+    text.setAttribute(k_v[0], k_v[1]);
+  });
+  add_text_node(text, arrow_label);
+
+  const a_dat = new arrow_data(start_point_of_arrow, end_point_of_arrow, arrowed_year, x_center, y_start, y_end);
+  TIMELINE_DATA.arrows.set(new_aid, a_dat);
+  g.dataset.start_period_id = start_point_of_arrow;
+  g.dataset.end_period_id = end_point_of_arrow;
+  g.dataset.arrowed_year = arrowed_year;
+  g.dataset.x_center = x_center;
+  g.dataset.y_start = y_start;
+  g.dataset.y_end = y_end;
+
+  ARROW_SELECTORS.forEach(sel => {
+    add_selector_option(sel, new_aid, '[' + arrowed_year + '] ' + arrow_label);
+  });
 }
 
 /* 「ダウンロードする」メニュー。 */

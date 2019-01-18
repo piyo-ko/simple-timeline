@@ -18,8 +18,10 @@
 <style><![CDATA[ @import url(timeline_svg.css); ]]></style>
 <style id="theme_style_def"></style>
 <defs id="gradient_def"></defs>
+<defs id="arrow_def"></defs>
 <g id="header_and_v_bars"></g>
 <g id="timeline_body"></g>
+<g id="arrow_container"></g>
 </svg>
 </div>
 
@@ -141,6 +143,22 @@
 </td>
 </tr>
 
+<tr>
+<th>矢印を<wbr>追加</th>
+<td>
+<input type="text" name="arrow_label" id="arrow_label" size="40" />
+というラベルのついた、
+<select name="start_point_of_arrow" id="start_point_of_arrow"></select> から
+<select name="end_point_of_arrow" id="end_point_of_arrow"></select> への
+<label><input type="radio" name="arrow_shape" value="single_headed" id="arrow_shape_single_headed" checked />片矢印</label>
+<label><input type="radio" name="arrow_shape" value="double_headed" id="arrow_shape_double_headed" />両矢印</label>
+を、
+<select name="arrow_color" id="arrow_color"></select>
+で
+<input type="number" name="arrowed_year" id="arrowed_year" step="1" min="-9999" max="9999" /> 年の箇所に
+<button type="button" onclick="add_arrow()">追加する</button>
+</td>
+</tr>
 <tr>
 <th>ダウンロードする</th>
 <td>
