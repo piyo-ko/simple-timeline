@@ -1075,6 +1075,23 @@ function remove_period() {
   const pid = selected_choice(document.menu.period_to_remove),
     g = document.getElementById(pid + 'g');
 
+  // この期間を始点または終点とする矢印がある場合は、期間を削除してよいかを
+  // 確認する。
+  let associated_arrows = new Array();
+  TIMELINE_DATA.arrows.forEach((dat, aid, m) => {
+    if (dat.start_period_id === pid || dat.end_period_id === pid) {
+      associated_arrows.push(aid);
+    }
+  });
+  if (associated_arrows.length > 0) {
+    const msg = {ja: 'この期間を始点または終点とする矢印が存在します。\nこの期間を削除してよければ [OK] を選んでください。',
+                 en: 'There is at least one arrow starting from or ending at this period.\nSelect [OK] only when you do want to delete this period.'};
+    if (! confirm(msg[LANG])) { return; }
+    // ここに来るのは実際にこの期間を削除したいときだけ。
+    // この場合、矢印も削除する。
+    associated_arrows.forEach(aid => { remove_arrow_0(aid); });
+  }
+
   // この期間に関連づけられた出来事があるかもしれない。
   // 出来事を選ぶための各セレクタから、それらの出来事に対応する選択肢を削除。
   for (let cur_elt = g.firstChild; cur_elt !== null; 
