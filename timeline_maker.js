@@ -132,6 +132,7 @@ window.top.onload = function () {
    m.start_point_of_arrow, m.end_point_of_arrow]
    .forEach(sel => { PERIOD_SELECTORS.add(sel); });
   EVENT_SELECTORS.add(m.event_to_remove);
+  ARROW_SELECTORS.add(m.arrow_to_remove);
 
   reset_svg();
   return(true);
@@ -1350,6 +1351,19 @@ function add_arrow() {
   ARROW_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_aid, '[' + arrowed_year + '] ' + arrow_label);
   });
+}
+
+/* 「矢印を削除」メニュー。 */
+function remove_arrow() {
+  const aid = selected_choice(document.menu.arrow_to_remove);
+  remove_arrow_0(aid);
+}
+function remove_arrow_0(aid) {
+  const g = document.getElementById(aid + '_g');
+  remove_all_children(g);
+  g.parentNode.removeChild(g);
+  ARROW_SELECTORS.forEach(sel => { remove_choice(sel, aid); });
+  TIMELINE_DATA.arrows.delete(aid);
 }
 
 /* 「ダウンロードする」メニュー。 */
