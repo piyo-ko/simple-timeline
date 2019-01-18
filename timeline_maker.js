@@ -1016,6 +1016,10 @@ function move_period() {
 
   // 移動対象として指定された期間 (と、その中の出来事) を、上または下に動かす。
   move_period_and_associated_events_up_or_down(pid, (up_or_down === 'upwards'));
+
+  TIMELINE_DATA.arrows.forEach((dat, aid, map) => {
+    redraw_arrow(aid);
+  });
 }
 
 /* 最終行を削除して、年表全体の高さを減らす。配置先の行の選択肢の削除も行う。
@@ -1392,6 +1396,45 @@ function add_arrow() {
   });
 }
 
+/*  */
+function redraw_arrow(aid) {
+  const dat = TIMELINE_DATA.arrows.get(aid),
+    g = document.getElementById(aid + '_g'),
+    path = document.getElementById(aid),
+    rect = document.getElementById(aid + '_r'),
+    text = document.getElementById(aid + '_t'),
+    start_period_dat = TIMELINE_DATA.periods.get(dat.start_period_id),
+    end_period_dat = TIMELINE_DATA.periods.get(dat.end_period_id);
+
+  if (start_period_dat.row === end_period_dat.row) {
+    const y = row_num_to_rect_y(start_period_dat.row);
+    path.setAttribute('d', 'M ' + g.dataset.x_center + ',' + y);
+    rect.setAttribute('y', y);
+    text.setAttribute('y', y);
+    g.dataset.y_start = y;
+    g.dataset.y_end = y;
+    dat.y_start = y;
+    dat.y_end = y;
+    TIMELINE_DATA.arrows.set(aid, dat);
+    return;
+  }
+
+  // ここに来るのは、矢印の始点側の期間と終点側の期間が別の段にある場合のみ。
+  const y_vals = row_nums_to_arrow_y_vals(start_period_dat.row, 
+                   end_period_dat.row, path.hasAttribute('marker-start')),
+    y_start = y_vals.y_start, y_end = y_vals.y_end,
+    d_str = 'M ' + g.dataset.x_center + ',' + y_start + 
+            ' l 0,' + (y_end - y_start).toString();
+  path.setAttribute('d', d_str);
+  const y_label_top = Math.round((y_start + y_end) / 2 - CONFIG.font_size / 2);
+  rect.setAttribute('y', y_label_top);
+  text.setAttribute('y', y_label_top);
+  g.dataset.y_start = y_start;
+  g.dataset.y_end = y_end;
+  dat.y_start = y_start;
+  dat.y_end = y_end;
+  TIMELINE_DATA.arrows.set(aid, dat);
+}
 
 /*
 「矢印のラベルの位置を調整」メニュー用。
