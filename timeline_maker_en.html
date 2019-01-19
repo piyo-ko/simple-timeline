@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="timeline_maker.css" type="text/css">
+<script type="text/javascript" src="common.js"></script>
+<script type="text/javascript" src="themes.js"></script>
+<script type="text/javascript" src="timeline_maker.js"></script>
+<base target="_top">
+<title>Draw a timeline chart in SVG</title>
+</head>
+<body>
+
+<h1>Draw a timeline chart in SVG</h1>
+
+<p>
+⚠️ I know that <em>there is a bug</em> by which timeline charts intended to cover some years before the Common Era will be drawn incorrectly.
+I intend to fix the bug, but this tool is now provided as it is.</p>
+
+<div id="timeline_container" class="container">
+<svg id="timeline" xmlns="http://www.w3.org/2000/svg" width="0" height="0" viewBox="0 0 0 0">
+<style><![CDATA[ @import url(timeline_svg.css); ]]></style>
+<style id="theme_style_def"></style>
+<defs id="gradient_def"></defs>
+<defs id="arrow_def"></defs>
+<g id="header_and_v_bars"></g>
+<g id="timeline_body"></g>
+<g id="arrow_container"></g>
+</svg>
+</div>
+
+
+<form name="menu">
+
+<div id="detailed_info">
+<div id="year_slider_container">
+[Year: <span id="min_year"></span>]
+<input type="range" name="year_slider" id="year_slider" step="1" min="" max="" oninput="view()" />
+[Year: <span id="max_year"></span>]
+</div>
+<ul id="description_items"></ul>
+</div>
+
+<div id="menu_container" class="container">
+<table>
+
+<tr>
+<th>Add a period</th>
+<td>
+<label for="start_year">Start year</label>: 
+<input type="number" name="start_year" id="start_year" step="1" min="-9999" max="9999" />
+(specified as
+<label for="start_year_type_actual"><input type="radio" name="start_year_type" id="start_year_type_actual" value="actual" checked />the actual start year</label>
+<label for="start_year_type_dummy"><input type="radio" name="start_year_type" id="start_year_type_dummy" value="dummy" />a rough indication of the left end</label>)
+<br>
+<label for="end_year">End year</label>: <input type="number" name="end_year" id="end_year" step="1" min="-9999" max="9999" />
+(specified as
+<label for="end_year_type_actual"><input type="radio" name="end_year_type" id="end_year_type_actual" value="actual" checked />the actual end year</label>
+<label for="end_year_type_dummy"><input type="radio" name="end_year_type" id="end_year_type_dummy" value="dummy" />a rough indication of the right end</label>)
+<br>
+<label for="period_label">Label (era name, person's name, etc.)</label>: <input type="text" name="period_label" id="period_label" size="30" />
+<br>
+<label for="which_row">The row number for specifying the vertical position where the new period should be placed: 
+<select name="which_row" id="which_row">
+<option id="1" value="1">1</option>
+</select>
+</label>
+(where the number &ldquo;1&rdquo; indicates the topmost row).
+<br>
+<label for="color_theme">Color scheme: 
+<select name="color_theme" id="color_theme"></select>
+</label>
+<br>
+<button type="button" onclick="add_period()">Add a new period as specified above</button>
+</td>
+</tr>
+
+<tr>
+<th>Modify the label of a period</th>
+<td>
+Select a period:
+<select name="period_to_re_label" id="period_to_re_label"></select>.
+Enter a new label for it:
+<input type="text" name="new_period_label" id="new_period_label" size="30" />.
+Then
+<button type="button" onclick="modify_period_label()">modify the label</button>.
+</td>
+</tr>
+
+<tr>
+<th>Change the color scheme of a period</th>
+<td>
+Select a period:
+<select name="period_to_re_color" id="period_to_re_color"></select>.
+Select a new color scheme for it:
+<select name="new_color_theme" id="new_color_theme"></select>.
+Then
+<button type="button" onclick="re_color()">change the color scheme</button>.
+</td>
+</tr>
+
+<tr>
+<th>Modify the range of a period</th>
+<td>
+Select a period:
+<select name="period_to_re_define" id="period_to_re_define" onchange="set_present_values()"></select>.
+<br>
+Enter the new start year:
+<input type="number" name="new_start_year" id="new_start_year" step="1" min="-9999" max="9999" />
+(specified as
+<label for="new_start_year_type_actual"><input type="radio" name="new_start_year_type" id="new_start_year_type_actual" value="actual" />the actual start year</label>
+<label for="new_start_year_type_dummy"><input type="radio" name="new_start_year_type" id="new_start_year_type_dummy" value="dummy" />a rough indication of the left end</label>).
+<br>
+Enter the new end year:
+<input type="number" name="new_end_year" id="new_end_year" step="1" min="-9999" max="9999" />
+(specified as
+<label for="new_end_year_type_actual"><input type="radio" name="new_end_year_type" id="new_end_year_type_actual" value="actual" />the actual end year</label>
+<label for="new_end_year_type_dummy"><input type="radio" name="new_end_year_type" id="new_end_year_type_dummy" value="dummy" />a rough indication of the right end</label>).
+<br>
+Then
+<button type="button" onclick="re_define_period()">modify the range of the period</button>.
+</td>
+</tr>
+
+<tr>
+<th>Move a period vertically</th>
+<td>
+Select a period: 
+<select name="period_to_move" id="period_to_move"></select>.
+Select the moving direction:
+<label for="which_direction_upwards"><input type="radio" name="which_direction" id="which_direction_upwards" value="upwards" />upwards</label>
+<label for="which_direction_downwards"><input type="radio" name="which_direction" id="which_direction_downwards" value="downwards" checked />downwards</label>.
+Then
+<button type="button" onclick="move_period()">move the period</button>.
+</td>
+</tr>
+
+<tr>
+<th>Remove a period</th>
+<td>
+Select a period: 
+<select name="period_to_remove" id="period_to_remove"></select>.
+Then
+<button type="button" onclick="remove_period()">remove the period</button>.
+</td>
+</tr>
+
+<tr>
+<th>Add an event</th>
+<td>
+Select a period:
+<select name="period_including_this_event" id="period_including_this_event"></select>.
+Specify a year included within the period:
+<input type="number" name="event_year" id="event_year" step="1" min="-9999" max="9999" />.
+<br>
+Enter a label for a new event that occurs the specified year: <input type="text" name="event_label" id="event_label" size="30" />.
+<br>
+Then <button type="button" onclick="add_event()">add the event</button>.
+<br>
+</td>
+</tr>
+
+<tr>
+<th>Remove an event</th>
+<td>
+Select an event:
+<select name="event_to_remove" id="event_to_remove"></select>.
+Then
+<button type="button" onclick="remove_event()">Remove the event</button>.
+</td>
+</tr>
+
+<tr>
+<th>Add an arrow starting from a period and pointing to another</th>
+<td>
+Enter a label for a new arrow:
+<input type="text" name="arrow_label" id="arrow_label" size="40" />.
+<br>
+Select the period from which the arrow starts:
+<select name="start_point_of_arrow" id="start_point_of_arrow"></select>.
+<br>
+Select the period to which the arrow points:
+<select name="end_point_of_arrow" id="end_point_of_arrow"></select>.
+<br>
+Select the type:
+<label><input type="radio" name="arrow_shape" value="single_headed" id="arrow_shape_single_headed" checked />single-headed arrow</label>
+<label><input type="radio" name="arrow_shape" value="double_headed" id="arrow_shape_double_headed" />double-headed arrow</label>.
+<br>
+Select the color:
+<select name="arrow_color" id="arrow_color"></select>.
+<br>
+Specify the year at which the arrow should be located:
+<input type="number" name="arrowed_year" id="arrowed_year" step="1" min="-9999" max="9999" />.
+<br>
+Then
+<button type="button" onclick="add_arrow()">add the arrow</button>.
+</td>
+</tr>
+
+<tr>
+<th>Move the label of an arrow vertically</th>
+<td>
+Select an arrow:
+<select name="label_positioning_target" id="label_positioning_target" onchange="set_current_arrow_label_pos()"></select>.
+Then specify the vertical position of the label for the selected arrow.
+<label>[the top
+<input type="range" name="label_pos_slider" id="label_pos_slider" step="1" min="0" max="100" oninput="apply_changed_arrow_label_pos()" />
+the bottom]</label>
+</td>
+</tr>
+
+<tr>
+<th>Remove an arrow</th>
+<td>
+Select an arrow:
+<select name="arrow_to_remove" id="arrow_to_remove"></select>.
+Then
+<button type="button" onclick="remove_arrow()">remove the arrow</button>.
+</td>
+</tr>
+
+<tr>
+<th>Download the SVG data</th>
+<td>
+<button type="button" onclick="download_svg()">Download the SVG data of this timeline chart</button>.
+</td>
+</tr>
+
+<tr>
+<th>Read an SVG file created and saved before</th>
+<td>
+<label for="input_svg_file">Select your SVG file</label>
+(<input type="file" id="input_svg_file" name="input_svg_file" />)
+and
+<button type="button" onclick="read_in()">display the timeline chart of the file</button>.</td>
+</tr>
+
+<tr>
+<th>Display samples of the predefined color schemes</th>
+<td><button type="button" onclick="show_color_samples()">Display samples of the predefined color schemes</button>.</td>
+</tr>
+
+</table>
+</div>
+
+</form>
+
+<nav>[
+<a href="https://piyo-ko.github.io/#eng">Home</a> |
+<a href="https://piyo-ko.github.io/pedigree/pedigree-en.html">Drawing tool for a pedigree chart (family tree chart)</a> |
+<a href="timeline_maker.html">Japanese version</a> |
+<a href="https://twitter.com/pi__yo__ko" target="_blank">Contact me on Twitter</a> |
+<a href="https://piyo-ko.github.io/tools/svg2png.html">Convert your SVG file into PNG format</a> (the linked page is written in Japanese) |
+About this page
+]</nav>
+
+
+</body>
+</html>
