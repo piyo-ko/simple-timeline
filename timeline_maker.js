@@ -1202,13 +1202,20 @@ function remove_period() {
     remove_last_empty_row();
   }
 
-  // 削除した期間が (余白行を除く) 最終行にあり、かつ、最終行に他の期間が
-  // ない場合
-  if (deleted_dat.row === TIMELINE_DATA.max_row_num &&
-      count_periods_in_last_row() === 0) {
-    // 年表の最終行 (余白行) を削除して、年表全体の高さを減らす (消した期間が
-    // あった行が、今からは余白行となる)。
-    remove_last_empty_row();
+  // 削除した期間が (余白行を除く) 最終行にあった場合。
+  // 今回の削除により最終行が空行になるなら、年表全体から最後の一行を減らす
+  // 必要がある。
+  // また、「空行以外の行 (A) の下に、一つ以上の空行 (B) をはさんで、最後に
+  // 空行以外の行 (C) がある」という状況下で、「その最後の行 (C) に位置する
+  // 唯一の期間を今回削除したため、その行 (C) が空になった」という場合もあり
+  // うる。この場合、一行削除するだけではだめで、「(A) の行の直下に余白行が
+  // ただ一つ残るだけ」となるまで、削除を適宜繰り返さねばならない。
+  if (deleted_dat.row === TIMELINE_DATA.max_row_num) {
+    while (count_periods_in_last_row() === 0) {
+      // 年表の最終行 (余白行) を削除して、年表全体の高さを減らす (消した期間が
+      // あった行が、今からは余白行となる)。
+      remove_last_empty_row();
+    }
   }
 
   if (MODE.f_remove_period > 0) { TIMELINE_DATA.print(); }
