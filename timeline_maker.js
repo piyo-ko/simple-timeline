@@ -976,6 +976,14 @@ function re_define_period() {
     end_txt.setAttribute('textLength', end_txt_len);
     add_text_node(end_txt, new_end_year);
   }
+
+  // 開始年と終了年が同じで、その年の text 要素が二つある場合は、座標を揃える
+  // (微妙に座標がずれていると見づらいので)。
+  if ((new_start_year === new_end_year) && 
+      (! typ.left_end_open) && (! typ.right_end_open)) {
+    document.getElementById(pid + '_start_year').setAttribute('x',
+      document.getElementById(pid + '_end_year').getAttribute('x'));
+  }
 }
 
 /* 「期間の配置を変更」メニュー。 */
