@@ -747,6 +747,8 @@ function change_min_year(new_start_year) {
   TIMELINE_DATA.svg_width += diff_x;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.min_year = new_start_year;
+  document.getElementById('timeline').dataset.min_year
+    = TIMELINE_DATA.min_year;
   TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
     move_period_and_associated_events(pid, diff_x, 0);
   });
@@ -778,6 +780,8 @@ function change_max_year(new_end_year) {
   TIMELINE_DATA.svg_width += diff_year * CONFIG.year_to_px_factor;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.max_year = new_end_year;
+  document.getElementById('timeline').dataset.max_year
+    = TIMELINE_DATA.max_year;
 }
 
 /* 「期間のラベルを変更」メニュー。 */
@@ -1003,6 +1007,8 @@ function move_period() {
   if (p_dat.row === TIMELINE_DATA.max_row_num && up_or_down === 'downwards') {
     // この場合、年表全体の下への拡大を伴う。
     TIMELINE_DATA.max_row_num++;
+    document.getElementById('timeline').dataset.max_row_num
+      = TIMELINE_DATA.max_row_num;
     TIMELINE_DATA.svg_height += CONFIG.row_height;
     resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
     update_v_bars();
@@ -1048,6 +1054,8 @@ function remove_last_empty_row() {
   remove_choice(document.menu.which_row, TIMELINE_DATA.max_row_num + 1);
   // 最終行を削除して、年表全体の高さを減らす。
   TIMELINE_DATA.max_row_num--;
+  document.getElementById('timeline').dataset.max_row_num
+    = TIMELINE_DATA.max_row_num;
   TIMELINE_DATA.svg_height -= CONFIG.row_height;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   update_v_bars();
