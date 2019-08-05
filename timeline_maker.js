@@ -141,15 +141,116 @@ window.top.onload = function () {
 
 /* 年から、その年の開始位置に相当する x 座標への変換 */
 function year_to_x(year) {
-  return((year - TIMELINE_DATA.min_year + CONFIG.h_margin_in_year)
-           * CONFIG.year_to_px_factor);
+  if (TIMELINE_DATA.max_year < TIMELINE_DATA.min_year) {
+    alert('Error in year_to_x(): TIMELINE_DATA.max_year < TIMELINE_DATA.min_year');
+    return(-1);
+  }
+  if (year == 0) {
+    alert('Error in year_to_x(): year == 0');
+    return(-1);
+  }
+
+  // (1) 実体が紀元後のみ、マージンを含めても紀元後のみ
+  //     ex. 実体は 6 年〜。左マージンは  1 〜  5 年に相当する範囲。
+  // (2) 実体は紀元後のみだが、マージンが紀元前に食い込む
+  //     ex. 実体は 1 年〜。左マージンは -5 〜 -1 年に相当する範囲。
+  //         実体は 2 年〜。左マージンは -4 〜  1 年に相当する範囲。
+  //         実体は 3 年〜。左マージンは -3 〜  2 年に相当する範囲。
+  //         実体は 4 年〜。左マージンは -2 〜  3 年に相当する範囲。
+  //         実体は 5 年〜。左マージンは -1 〜  4 年に相当する範囲。
+  // (3) 実体が紀元前のみ、マージンを含めても紀元前のみ
+  //     ex. 実体は 〜 -6 年。右マージンは -5 〜 -1 年に相当する範囲。
+  // (4) 実体は紀元前のみだが、マージンが紀元後に食い込む
+  //     ex. 実体は 〜 -5 年。右マージンは -4 〜  1 年に相当する範囲。
+  //         実体は 〜 -4 年。右マージンは -3 〜  2 年に相当する範囲。
+  //         実体は 〜 -3 年。右マージンは -2 〜  3 年に相当する範囲。
+  //         実体は 〜 -2 年。右マージンは -1 〜  4 年に相当する範囲。
+  //         実体は 〜 -1 年。右マージンは  1 〜  5 年に相当する範囲。
+  // (5) 実体が紀元をまたいでいる
+
+  // (5) の場合
+  if (TIMELINE_DATA.min_year < 0 && 0 < TIMELINE_DATA.max_year) {
+    const adjust = (year < 0 ? 0 : -1);
+    return((year - TIMELINE_DATA.min_year + adjust + CONFIG.h_margin_in_year)
+             * CONFIG.year_to_px_factor);
+  }
+  let ok = false;
+  // (1) の場合
+  if (0 < TIMELINE_DATA.min_year - CONFIG.h_margin_in_year) {
+    ok = true;
+  }
+  // (2) の場合
+  if (0 < TIMELINE_DATA.min_year &&
+      TIMELINE_DATA.min_year - CONFIG.h_margin_in_year <= 0) {
+    ok = true;
+  }
+  // (3) の場合
+  if (TIMELINE_DATA.max_year + CONFIG.h_margin_in_year < 0 ) {
+    ok = true;
+  }
+  // (4) の場合
+  if (TIMELINE_DATA.max_year < 0 &&
+      0 <= TIMELINE_DATA.max_year + CONFIG.h_margin_in_year) {
+    ok = true;
+  }
+
+  if (ok) { // (1)〜(4) の場合
+    return((year - TIMELINE_DATA.min_year + CONFIG.h_margin_in_year)
+             * CONFIG.year_to_px_factor);
+  } else { // ここには来ないはず。
+    alert('Unexpected error in year_to_x()');
+    return(-2);
+  }
 }
 
 /* x 座標から年への変換 (x 座標が年の開始位置に相当するものと見なしている) */
 function x_to_year(x) {
-  return(x / CONFIG.year_to_px_factor
-           + TIMELINE_DATA.min_year - CONFIG.h_margin_in_year);
+  // 場合分けの番号 (1) 〜 (5) は、year_to_x() でのものと同じ。
+  let ok = false;
+  // (1) の場合
+  if (0 < TIMELINE_DATA.min_year - CONFIG.h_margin_in_year) {
+    ok = true;
+  }
+  // (2) の場合
+  if (0 < TIMELINE_DATA.min_year &&
+      TIMELINE_DATA.min_year - CONFIG.h_margin_in_year <= 0) {
+    ok = true;
+  }
+  // (3) の場合
+  if (TIMELINE_DATA.max_year + CONFIG.h_margin_in_year < 0 ) {
+    ok = true;
+  }
+  // (4) の場合
+  if (TIMELINE_DATA.max_year < 0 &&
+      0 <= TIMELINE_DATA.max_year + CONFIG.h_margin_in_year) {
+    ok = true;
+  }
+  if (ok) { // (1)〜(4) の場合
+    return(x / CONFIG.year_to_px_factor
+             + TIMELINE_DATA.min_year - CONFIG.h_margin_in_year);
+  }
+  // (5) の場合
+  if (TIMELINE_DATA.min_year < 0 && 0 < TIMELINE_DATA.max_year) {
+    // 紀元前と紀元後の境界の x 座標 (紀元後 1 年の開始座標)
+    const x_of_border = year_to_x(1),
+      adjust = (x < x_of_border ? 0 : -1);
+    return(x / CONFIG.year_to_px_factor
+             + TIMELINE_DATA.min_year - adjust - CONFIG.h_margin_in_year);
+  }
+  // ここには来ないはず。
+  alert('Unexpected error in x_to_year()');
+  return(0);
 }
+
+/* 何年分の幅になるのかを返す。紀元をまたぐかどうかを考慮する。 */
+function year_span(start_year, end_year) {
+  if (start_year > end_year) {
+    alert('Unexpected error in year_span'); return(0);
+  }
+  return(end_year - start_year + 1 -
+           ((start_year < 0 && 0 < end_year) ? 1 : 0));
+}
+
 /* 円の cx 属性で指定される x 座標から年への変換。
 x_to_year(cx) - 0.5 と同じ。 */
 function cx_to_year(cx) { return(Math.floor(x_to_year(cx))); }
@@ -506,7 +607,7 @@ function check_year_range(start_year, end_year) {
 function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_type, period_label, which_row, color_theme) {
   const m = document.menu, svg_elt = document.getElementById('timeline'),
     timeline_body_elt = document.getElementById('timeline_body'),
-    period_len = end_year - start_year + 1,
+    period_len = year_span(start_year, end_year),
     rect_w = period_len * CONFIG.year_to_px_factor;
 
   if (TIMELINE_DATA.init_state) { // これが最初の期間の追加である場合
@@ -633,18 +734,105 @@ function update_v_bars() {
   // としても、x 座標が 0 の、ギリギリのところに目盛を描画したくはない。
   // そこで、それよりも 1 年だけ内側 (年表の中心側) のところを、
   // 「目盛を描画する対象になりうる最小の年」として求める。
-  // これが min_y_incl_margin であり、年が最も遅い側について同趣旨で求めるのが
-  // max_y_incl_margin である。
-  const min_y_incl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year + 1,
-    max_y_incl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year - 1;
-  // 上記の二つの値は CONFIG.vertical_bar_interval_in_year で割り切れるとは
-  // 限らない。そこで、上記の二つの値で挟まれた閉区間において、
+  // これが min_y_excl_margin であり、年が最も遅い側について同趣旨で求めるのが
+  // max_y_excl_margin である。
+  let min_y_excl_margin = 0, max_y_excl_margin = 0; // ありえない値
+  // 紀元前・紀元後の境界線を描画すべきか
+  let draw_BCE_CE_boundary = false;
+
+  // 以下、CONFIG.h_margin_in_year が 5 だとして値を例示し、
+  // 「紀元前・紀元後の境界線」を単に「境界線」と表記して場合分けする。
+  if (1 <= TIMELINE_DATA.min_year - CONFIG.h_margin_in_year) {
+    // (a) 実体が紀元後のみ。マージンも紀元後のみ。境界線にかからない。
+    //     ex. 実体は 7 年〜。左マージンは  2 〜  6 年に相当する範囲。
+    //         実体は 6 年〜。左マージンは  1 〜  5 年に相当する範囲で、
+    //         描画対象はそのうちの 2 〜 5 年だから、境界線は描画対象外。
+    min_y_excl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year + 1,
+    max_y_excl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year - 1;
+  } else if (0 < TIMELINE_DATA.min_year && 
+             TIMELINE_DATA.min_year <= CONFIG.h_margin_in_year) {
+    // (b) 実体は紀元後のみだが、マージンが紀元前に食い込むので境界線を描画する。
+    //     ex. 実体は 5 年〜。左マージンは -1 〜  4 年に相当する範囲なので
+    //         境界線はぎりぎり描画対象内 (min_y_excl_margin が 1 となる)。
+    //         実体は 4 年〜。左マージンは -2 〜  3 年に相当する範囲。
+    //         なお min_y_excl_margin は -1 となる。
+    //         実体は 3 年〜。左マージンは -3 〜  2 年に相当する範囲。
+    //         実体は 2 年〜。左マージンは -4 〜  1 年に相当する範囲。
+    //         実体は 1 年〜。左マージンは -5 〜 -1 年に相当する範囲。
+    draw_BCE_CE_boundary = true;
+    if (TIMELINE_DATA.min_year == CONFIG.h_margin_in_year) {
+      min_y_excl_margin = 1;
+    } else {
+      min_y_excl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year;
+    }
+    max_y_excl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year - 1;
+  } else if (TIMELINE_DATA.min_year < 0 && 0 < TIMELINE_DATA.max_year) {
+    // (c) 実体が紀元をまたいでいるので境界線を描画する。
+    draw_BCE_CE_boundary = true;
+    min_y_excl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year + 1,
+    max_y_excl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year - 1;
+  } else if (TIMELINE_DATA.max_year < 0 &&
+             0 <= TIMELINE_DATA.max_year + CONFIG.h_margin_in_year) {
+    // (d) 実体は紀元前のみだが、マージンが紀元後に食い込むので境界線を描画する。
+    //     ex. 実体は 〜 -5 年。右マージンは -4 〜  1 年に相当する範囲で、
+    //         描画対象はそのうちの -4 年始め 〜 -1 年終わりだから、境界線は
+    //         ぎりぎり描画対象内。
+    //         実体は 〜 -4 年。右マージンは -3 〜  2 年に相当する範囲。
+    //         実体は 〜 -3 年。右マージンは -2 〜  3 年に相当する範囲。
+    //         実体は 〜 -2 年。右マージンは -1 〜  4 年に相当する範囲。
+    //         実体は 〜 -1 年。右マージンは  1 〜  5 年に相当する範囲。
+    draw_BCE_CE_boundary = true;
+    min_y_excl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year + 1;
+    if (TIMELINE_DATA.max_year + CONFIG.h_margin_in_year == 0) {
+      max_y_excl_margin = -1;
+    } else {
+      max_y_excl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year;
+    }
+  } else if (TIMELINE_DATA.max_year + CONFIG.h_margin_in_year < 0) {
+    // (e) 実体が紀元前のみ、マージンを含めても紀元前のみ。境界線にかからない。
+    //     ex. 実体は 〜 -6 年。右マージンは -5 〜 -1 年に相当する範囲で、
+    //         描画対象はそのうちの -5 年始め 〜 -2 年終わりだから、境界線は
+    //         描画対象外。
+    min_y_excl_margin = TIMELINE_DATA.min_year - CONFIG.h_margin_in_year + 1,
+    max_y_excl_margin = TIMELINE_DATA.max_year + CONFIG.h_margin_in_year - 1;
+  } else {
+    // ここには来ないはず。
+    alert('Unexpected error in update_v_bars(): errornous case');
+    return;
+  }
+
+  if (min_y_excl_margin === 0 || max_y_excl_margin === 0) {
+    alert('Unexpected error in update_v_bars(): invalid zero value(s)');
+  }
+
+  // min_y_excl_margin と max_y_excl_margin の値は 
+  // CONFIG.vertical_bar_interval_in_year で割り切れるとは限らない。
+  // そこで、上記の二つの値で挟まれた閉区間において、
   // CONFIG.vertical_bar_interval_in_year で割り切れる最小値と最大値を求める。
-  const min_y_rem = min_y_incl_margin % CONFIG.vertical_bar_interval_in_year,
-    min_y = (min_y_rem === 0) ? min_y_incl_margin :
-            min_y_incl_margin - min_y_rem + CONFIG.vertical_bar_interval_in_year,
-    max_y = max_y_incl_margin - 
-            max_y_incl_margin % CONFIG.vertical_bar_interval_in_year;
+  const min_y_rem = min_y_excl_margin % CONFIG.vertical_bar_interval_in_year, 
+        max_y_rem = max_y_excl_margin % CONFIG.vertical_bar_interval_in_year;
+  let min_y, max_y;
+  if (min_y_rem === 0) {
+    min_y = min_y_excl_margin;
+  } else {
+    if (0 < min_y_excl_margin) {
+      min_y = min_y_excl_margin - min_y_rem + 
+              CONFIG.vertical_bar_interval_in_year;
+    } else {
+      min_y = min_y_excl_margin - min_y_rem;
+    }
+  }
+  if (max_y_rem === 0) {
+    max_y = max_y_excl_margin;
+  } else {
+    if (0 < max_y_excl_margin) {
+      max_y = max_y_excl_margin - max_y_rem;
+    } else {
+      max_y = max_y_excl_margin - max_y_rem - 
+              CONFIG.vertical_bar_interval_in_year;
+    }
+  }
+
   // update_v_bars で描画対象となる要素を包含する親要素
   const header_elt = document.getElementById('header_and_v_bars');
   // 目盛線の下端
@@ -652,8 +840,8 @@ function update_v_bars() {
                    CONFIG.row_height * (TIMELINE_DATA.max_row_num + 1);
 
   if (MODE.f_update_v_bars > 0) {
-    console.log('\nmin_y_incl_margin=' + min_y_incl_margin);
-    console.log('max_y_incl_margin=' + max_y_incl_margin);
+    console.log('\nmin_y_excl_margin=' + min_y_excl_margin);
+    console.log('max_y_excl_margin=' + max_y_excl_margin);
     console.log('min_y=' + min_y);
     console.log('max_y=' + max_y);
     console.log('y_bottom=' + y_bottom);
@@ -672,11 +860,35 @@ function update_v_bars() {
     }
   });
 
+  // 紀元前と紀元後の境界線 (紀元 1 年の開始時点に引く)
+  let boundary_v_bar = document.getElementById('v_bar_1');
+  if (draw_BCE_CE_boundary) {
+    let x = year_to_x(1);
+    if (boundary_v_bar) { // 既存のものを修正
+      const attr = [['x1', x], ['x2', x], ['y2', y_bottom]];
+      attr.forEach(k_v => { boundary_v_bar.setAttribute(k_v[0], k_v[1]); });
+    } else { // 新たに作る
+      boundary_v_bar = document.createElementNS(SVG_NS, 'line');
+      const attr = [['id', 'v_bar_1'], ['class', 'v_bar boundary'],
+          ['x1', x], ['y1', CONFIG.txt_region_in_header_row],
+          ['x2', x], ['y2', y_bottom]];
+      attr.forEach(k_v => { boundary_v_bar.setAttribute(k_v[0], k_v[1]); });
+      header_elt.appendChild(boundary_v_bar);
+      add_text_node(header_elt, '\n');
+    }
+    TIMELINE_DATA.v_bars.add(1);
+  } else { // 境界線が不要な場合、もし既存の境界線があれば削除する。
+    if (boundary_v_bar) { 
+      header_elt.removeChild(boundary_v_bar);
+    }
+  }
+
   // min_y 年から max_y 年までの目盛を描画する。
   for (let year = min_y; year <= max_y; 
            year += CONFIG.vertical_bar_interval_in_year) {
+    if (year === 0) { continue; }
     // year 年の目盛に対応する x 座標と、この目盛用のテキスト要素の幅。
-    const x = year_to_x(year), txt_span = year_txt_len(year.toString());
+    const x = year_to_x(year), txt_span = year_txt_len(year);
     if (TIMELINE_DATA.v_bars.has(year)) { // year 年の縦線が存在する場合。
       if (MODE.f_update_v_bars > 0) {
         console.log('Elements for year ' + year + ' exist.');
@@ -925,7 +1137,8 @@ function re_define_period() {
     rect = document.getElementById(pid),
     g = document.getElementById(pid + 'g'),
     new_x = year_to_x(new_start_year),
-    new_w = (new_end_year - new_start_year + 1) * CONFIG.year_to_px_factor,
+    period_len = year_span(new_start_year, new_end_year),
+    new_w = period_len * CONFIG.year_to_px_factor,
     typ = rect_type(new_start_year_type, new_end_year_type),
     gradient_def_name = p_dat.base_color_theme + '_' + typ.gradient_type;
 
@@ -1704,7 +1917,7 @@ function set_read_values() {
   TIMELINE_DATA.min_year = min_year;
   TIMELINE_DATA.max_year = max_year;
   set_year_range();
-  const year_span = max_year + 1 - min_year + CONFIG.h_margin_in_year * 2;
+  const year_span = year_span(min_year, max_year) + CONFIG.h_margin_in_year * 2;
   if (year_span * CONFIG.year_to_px_factor !== svg_width) {
     const msg = {ja: '最も早い年から最も遅い年までの長さと幅とが不整合です',
                  en: 'The span between the earliest year and the latest year is inconsistent with the width.'};
