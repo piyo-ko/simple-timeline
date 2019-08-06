@@ -341,9 +341,8 @@ function reset_svg() {
 
 /* svg 要素の大きさを変更する。 */
 function resize_svg(w, h) {
-  const svg_elt = document.getElementById('timeline'),
-    attr = [['width', w], ['height', h], ['viewBox', `0 0 ${w} ${h}`]];
-  attr.forEach(k_v => { svg_elt.setAttribute(k_v[0], k_v[1]); });
+  set_attributes(document.getElementById('timeline'),
+    [['width', w], ['height', h], ['viewBox', `0 0 ${w} ${h}`]]);
 }
 
 /* themes.js に定義されている配色テーマの定義を読み取り、svg 要素内にその定義を
@@ -383,43 +382,43 @@ function set_theme_defs() {
     grad_id += (right_open ? '_open' : '_closed');
     if (document.getElementById(grad_id)) { return; } // 既存なら何もしない。
     const grad = document.createElementNS(SVG_NS, 'linearGradient');
-    grad.setAttribute('id', grad_id);
+    set_attributes(grad, [['id', grad_id]]);
     add_text_node(grad, '\n');
     // 左側
     // 左端 (左端から 0% の場所) の stop 要素
     const stop_0 = document.createElementNS(SVG_NS, 'stop');
-    stop_0.setAttribute('offset', '0%');
+    set_attributes(stop_0, [['offset', '0%']]);
     if (left_open) {
-      fading_attr.forEach((k_v) => { stop_0.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(stop_0, fading_attr);
       grad.appendChild(stop_0);  add_text_node(grad, '\n');
       // 左端からのグラデーションの部分と、それより中心側のべた塗りの部分との
       // 境界に当たる stop 要素
       const stop_L = document.createElementNS(SVG_NS, 'stop');
-      stop_L.setAttribute('offset', stop_L_offset_str);
-      opaque_attr.forEach((k_v) => { stop_L.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(stop_L, [['offset', stop_L_offset_str]]);
+      set_attributes(stop_L, opaque_attr);
       grad.appendChild(stop_L);  add_text_node(grad, '\n');
     } else {
-      opaque_attr.forEach((k_v) => { stop_0.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(stop_0, opaque_attr);
       grad.appendChild(stop_0);  add_text_node(grad, '\n');
     }
     // 右側
     // 右端 (左端から 100% の場所) の stop 要素
     const stop_100 = document.createElementNS(SVG_NS, 'stop');
-    stop_100.setAttribute('offset', '100%');
+    set_attributes(stop_100, [['offset', '100%']]);
     if (right_open) {
       // 右端からのグラデーションの部分と、それより中心側のべた塗りの部分との
       // 境界に当たる stop 要素
       const stop_R = document.createElementNS(SVG_NS, 'stop');
-      stop_R.setAttribute('offset', stop_R_offset_str);
-      opaque_attr.forEach((k_v) => { stop_R.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(stop_R, [['offset', stop_R_offset_str]]);
+      set_attributes(stop_R, opaque_attr);
       grad.appendChild(stop_R);  add_text_node(grad, '\n');
-      fading_attr.forEach((k_v) => { stop_100.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(stop_100, fading_attr);
       grad.appendChild(stop_100);  add_text_node(grad, '\n');
     } else {
-      opaque_attr.forEach((k_v) => { stop_100.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(stop_100, opaque_attr);
       grad.appendChild(stop_100);  add_text_node(grad, '\n');
     }
-    // 
+
     add_text_node(defs_elt, '\n');
     defs_elt.appendChild(grad);
     add_text_node(defs_elt, '\n');
@@ -475,20 +474,19 @@ function set_arrow_color_defs() {
     if (document.getElementById(ac.id + '_arrow_head')) { return; }
 
     const marker = document.createElementNS(SVG_NS, 'marker');
-    [['id', ac.id + '_arrow_head'],  ['markerUnits', 'strokeWidth'],
-     ['markerWidth', 4], ['markerHeight', 4],
-     ['viewBox', '0 0 8 8'], ['refX', 4], ['refY', 4],
-     ['orient', 'auto-start-reverse']].forEach((k_v) => {
-      marker.setAttribute(k_v[0], k_v[1]);
-    });
+    set_attributes(marker,
+      [['id', ac.id + '_arrow_head'],  ['markerUnits', 'strokeWidth'],
+       ['markerWidth', 4], ['markerHeight', 4],
+       ['viewBox', '0 0 8 8'], ['refX', 4], ['refY', 4],
+       ['orient', 'auto-start-reverse']]);
     add_text_node(defs_elt, '\n');
     defs_elt.appendChild(marker);
     add_text_node(defs_elt, '\n');
     const polygon = document.createElementNS(SVG_NS, 'polygon');
 
     add_text_node(marker, '\n  ');
-    polygon.setAttribute('points', '0,0 8,4 0,8 2,4');
-    polygon.setAttribute('fill', ac.arrow_color);
+    set_attributes(polygon, 
+      [['points', '0,0 8,4 0,8 2,4'], ['fill', ac.arrow_color]]);
     marker.appendChild(polygon);
     add_text_node(marker, '\n');
 
@@ -496,15 +494,34 @@ function set_arrow_color_defs() {
   });
 }
 
-/* SVG 要素 (rect, line, circle) を移動させる。 */
-function move_svg_elt(id, dx, dy, is_circle = false) {
-  const elt = document.getElementById(id);
-  if (elt === null) { return; }
-  const x_name = (is_circle ? 'cx' : 'x'), y_name = (is_circle ? 'cy' : 'y');
-  if (! elt.hasAttribute(x_name) || ! elt.hasAttribute(y_name)) { return; }
-  const x = parseInt(elt.getAttribute(x_name)), 
-        y = parseInt(elt.getAttribute(y_name));
-  elt.setAttribute(x_name, x + dx);  elt.setAttribute(y_name, y + dy);
+/* SVG 要素 (rect, text, circle, line, path) を移動させる。 */
+function move_rect_or_text(id, dx, dy) {
+  const rect_or_text = document.getElementById(id);
+  if (rect_or_text === null) { return; }
+  function val(a) { return(parseInt(rect_or_text.getAttribute(a))); }
+  set_attributes(rect_or_text, [['x', val('x') + dx], ['y', val('y') + dy]]);
+}
+function move_circle(id, dx, dy) {
+  const circle = document.getElementById(id);
+  if (circle === null) { return; }
+  function val(a) { return(parseInt(circle.getAttribute(a))); }
+  set_attributes(circle, [['cx', val('cx') + dx], ['cy', val('cy') + dy]]);
+}
+function move_line(id, dx, dy) {
+  const line = document.getElementById(id);
+  if (line === null) { return; }
+  function val(a) { return(parseInt(line.getAttribute(a))); }
+  set_attributes(line, 
+    [['x1', val('x1') + dx], ['x2', val('x2') + dx],
+     ['y2', val('y1') + dy], ['y2', val('y2') + dy]]);
+}
+function move_path(id, dx, dy) {
+  const path = document.getElementById(id);
+  if (path === null) { return; }
+  const matches = path.getAttribute('d').match(/^M ([-]?\d+),([-]?\d+)(.+)$/);
+  if (matches === null || matches.length !== 4) { return; }
+  const new_x = parseInt(matches[1]) + dx, new_y = parseInt(matches[2]) + dy;
+  set_attributes(path, [['d', 'M ' + new_x + ',' + new_y + matches[3]]]);
 }
 
 /* 年表全体で最も早い年・最も遅い年が変化する可能性がある場合 (期間の追加、
@@ -621,11 +638,11 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
     resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
 
     const header_g_elt = document.getElementById('header_and_v_bars'),
-      h_rule = document.createElementNS(SVG_NS, 'line'),
-      h_rule_attr = [['id', 'h_rule'], ['class', 'header'],
-        ['x1', 0], ['y1', CONFIG.header_row_height],
-        ['x2', TIMELINE_DATA.svg_width], ['y2', CONFIG.header_row_height]];
-    h_rule_attr.forEach(k_v => { h_rule.setAttribute(k_v[0], k_v[1]); });
+      h_rule = document.createElementNS(SVG_NS, 'line');
+      set_attributes(h_rule,
+        [['id', 'h_rule'], ['class', 'header'],
+         ['x1', 0], ['y1', CONFIG.header_row_height],
+         ['x2', TIMELINE_DATA.svg_width], ['y2', CONFIG.header_row_height]]);
     add_text_node(header_g_elt, '\n');
     header_g_elt.appendChild(h_rule);  add_text_node(header_g_elt, '\n');
 
@@ -657,48 +674,45 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
   set_year_range();
 
   const g = document.createElementNS(SVG_NS, 'g');
-  g.setAttribute('id', new_pid + 'g');
+  set_attributes(g, [['id', new_pid + 'g']]);
 
   const rect = document.createElementNS(SVG_NS, 'rect'),
     rect_x = year_to_x(start_year),
     rect_y = row_num_to_rect_y(which_row),
     typ = rect_type(start_year_type, end_year_type),
-    gradient_def_name = color_theme + '_' + typ.gradient_type,
-    rect_attr = [['id', new_pid], ['x', rect_x], ['y', rect_y],
-      ['width', rect_w], ['height', CONFIG.bar_height],
-      ['fill', 'url(#' + gradient_def_name + ')']];
-  rect_attr.forEach(k_v => { rect.setAttribute(k_v[0], k_v[1]); });
+    gradient_def_name = color_theme + '_' + typ.gradient_type;
+  set_attributes(rect,
+    [['id', new_pid], ['x', rect_x], ['y', rect_y],
+     ['width', rect_w], ['height', CONFIG.bar_height],
+     ['fill', 'url(#' + gradient_def_name + ')']]);
   add_text_node(g, '\n');  g.appendChild(rect);  add_text_node(g, '\n');
 
   if (! typ.left_end_open) {
     const start_txt = document.createElementNS(SVG_NS, 'text'),
-      start_txt_len = year_txt_len(start_year),
-      start_attr = [['id', new_pid + '_start_year'],
-        ['class', 'year ' + color_theme],
-        ['x', rect_x], ['y', row_num_to_year_txt_y(which_row)],
-        ['dx', 0], ['dy', CONFIG.font_size], ['textLength', start_txt_len]];
-    start_attr.forEach(k_v => { start_txt.setAttribute(k_v[0], k_v[1]); });
+      start_txt_len = year_txt_len(start_year);
+    set_attributes(start_txt,
+      [['id', new_pid + '_start_year'], ['class', 'year ' + color_theme],
+       ['x', rect_x], ['y', row_num_to_year_txt_y(which_row)],
+       ['dx', 0], ['dy', CONFIG.font_size], ['textLength', start_txt_len]]);
     add_text_node(start_txt, start_year);
     g.appendChild(start_txt);  add_text_node(g, '\n');
   }
   if (! typ.right_end_open) {
     const end_txt = document.createElementNS(SVG_NS, 'text'),
       end_txt_len = year_txt_len(end_year),
-      end_txt_x = rect_x + rect_w - end_txt_len,
-      end_attr = [['id', new_pid + '_end_year'],
-        ['class', 'year ' + color_theme],
-        ['x', end_txt_x], ['y', row_num_to_year_txt_y(which_row)],
-        ['dx', 0], ['dy', CONFIG.font_size], ['textLength', end_txt_len]];
-    end_attr.forEach(k_v => { end_txt.setAttribute(k_v[0], k_v[1]); });
+      end_txt_x = rect_x + rect_w - end_txt_len;
+    set_attributes(end_txt,
+      [['id', new_pid + '_end_year'], ['class', 'year ' + color_theme],
+       ['x', end_txt_x], ['y', row_num_to_year_txt_y(which_row)],
+       ['dx', 0], ['dy', CONFIG.font_size], ['textLength', end_txt_len]]);
     add_text_node(end_txt, end_year);
     g.appendChild(end_txt);  add_text_node(g, '\n');
   }
-  const label_txt = document.createElementNS(SVG_NS, 'text'),
-    label_attr = [['id', new_pid + '_label'],
-      ['class', 'label ' + color_theme],
-      ['x', rect_x], ['y', row_num_to_label_txt_y(which_row)],
-      ['dx', 0], ['dy', CONFIG.font_size]];
-  label_attr.forEach(k_v => { label_txt.setAttribute(k_v[0], k_v[1]); });
+  const label_txt = document.createElementNS(SVG_NS, 'text');
+  set_attributes(label_txt,
+    [['id', new_pid + '_label'], ['class', 'label ' + color_theme],
+     ['x', rect_x], ['y', row_num_to_label_txt_y(which_row)],
+     ['dx', 0], ['dy', CONFIG.font_size]]);
   add_text_node(label_txt, period_label);
   g.appendChild(label_txt);  add_text_node(g, '\n');
 
@@ -708,8 +722,8 @@ function add_period_0(new_pid, start_year, start_year_type, end_year, end_year_t
   // (微妙に座標がずれていると見づらいので)。
   if ((start_year === end_year) && 
       (! typ.left_end_open) && (! typ.right_end_open)) {
-    document.getElementById(new_pid + '_start_year').setAttribute('x',
-      document.getElementById(new_pid + '_end_year').getAttribute('x'));
+    set_attributes(document.getElementById(new_pid + '_start_year'),
+      [['x', document.getElementById(new_pid + '_end_year').getAttribute('x')]]);
   }
 
   const p_dat = new period_data(start_year, end_year, which_row, color_theme, gradient_def_name);
@@ -814,23 +828,19 @@ function update_v_bars() {
   let min_y, max_y;
   if (min_y_rem === 0) {
     min_y = min_y_excl_margin;
+  } else if (0 < min_y_excl_margin) {
+    min_y = min_y_excl_margin - min_y_rem + 
+            CONFIG.vertical_bar_interval_in_year;
   } else {
-    if (0 < min_y_excl_margin) {
-      min_y = min_y_excl_margin - min_y_rem + 
-              CONFIG.vertical_bar_interval_in_year;
-    } else {
-      min_y = min_y_excl_margin - min_y_rem;
-    }
+    min_y = min_y_excl_margin - min_y_rem;
   }
   if (max_y_rem === 0) {
     max_y = max_y_excl_margin;
+  } else  if (0 < max_y_excl_margin) {
+    max_y = max_y_excl_margin - max_y_rem;
   } else {
-    if (0 < max_y_excl_margin) {
-      max_y = max_y_excl_margin - max_y_rem;
-    } else {
-      max_y = max_y_excl_margin - max_y_rem - 
-              CONFIG.vertical_bar_interval_in_year;
-    }
+    max_y = max_y_excl_margin - max_y_rem - 
+            CONFIG.vertical_bar_interval_in_year;
   }
 
   // update_v_bars で描画対象となる要素を包含する親要素
@@ -865,14 +875,14 @@ function update_v_bars() {
   if (draw_BCE_CE_boundary) {
     let x = year_to_x(1);
     if (boundary_v_bar) { // 既存のものを修正
-      const attr = [['x1', x], ['x2', x], ['y2', y_bottom]];
-      attr.forEach(k_v => { boundary_v_bar.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(boundary_v_bar,
+        [['x1', x], ['x2', x], ['y2', y_bottom]]);
     } else { // 新たに作る
       boundary_v_bar = document.createElementNS(SVG_NS, 'line');
-      const attr = [['id', 'v_bar_1'], ['class', 'v_bar boundary'],
-          ['x1', x], ['y1', CONFIG.txt_region_in_header_row],
-          ['x2', x], ['y2', y_bottom]];
-      attr.forEach(k_v => { boundary_v_bar.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(boundary_v_bar,
+        [['id', 'v_bar_1'], ['class', 'v_bar boundary'],
+         ['x1', x], ['y1', CONFIG.txt_region_in_header_row],
+         ['x2', x], ['y2', y_bottom]]);
       header_elt.appendChild(boundary_v_bar);
       add_text_node(header_elt, '\n');
     }
@@ -893,28 +903,27 @@ function update_v_bars() {
       if (MODE.f_update_v_bars > 0) {
         console.log('Elements for year ' + year + ' exist.');
       }
-      const v = document.getElementById('v_bar_' + year),
-        v_attr = [['x1', x], ['x2', x], ['y2', y_bottom]]; // y1 は変化しない。
-      v_attr.forEach(k_v => { v.setAttribute(k_v[0], k_v[1]); });
-      const v_txt = document.getElementById('v_bar_txt_' + year);
-      v_txt.setAttribute('x', x - txt_span/2); // x 以外は変化しない。
+      set_attributes(document.getElementById('v_bar_' + year),
+        [['x1', x], ['x2', x], ['y2', y_bottom]]); // y1 は変化しない。
+      set_attributes(document.getElementById('v_bar_txt_' + year),
+        [['x', x - txt_span/2]]); // x 以外は変化しない。
     } else { // year 年の縦線が存在しないので、新たに作成する。
       if (MODE.f_update_v_bars > 0) {
         console.log('New elements for year ' + year + ' are created.');
       }
-      const v = document.createElementNS(SVG_NS, 'line'),
-        v_attr = [['id', 'v_bar_' + year], ['class', 'v_bar'],
-          ['x1', x], ['y1', CONFIG.txt_region_in_header_row],
-          ['x2', x], ['y2', y_bottom]];
-      v_attr.forEach(k_v => { v.setAttribute(k_v[0], k_v[1]); });
+      const v = document.createElementNS(SVG_NS, 'line');
+      set_attributes(v, 
+        [['id', 'v_bar_' + year], ['class', 'v_bar'],
+         ['x1', x], ['y1', CONFIG.txt_region_in_header_row],
+         ['x2', x], ['y2', y_bottom]]);
       header_elt.appendChild(v);  add_text_node(header_elt, '\n');
 
-      const v_txt = document.createElementNS(SVG_NS, 'text'),
-        txt_attr = [['id', 'v_bar_txt_' + year], ['class', 'year v_bar'],
-          ['textLength', txt_span],
-          ['x', x - txt_span/2], ['y', 0], ['dx', 0], ['dy', CONFIG.font_size]];
+      const v_txt = document.createElementNS(SVG_NS, 'text');
+      set_attributes(v_txt,
+        [['id', 'v_bar_txt_' + year], ['class', 'year v_bar'],
+         ['textLength', txt_span],
+         ['x', x - txt_span/2], ['y', 0], ['dx', 0], ['dy', CONFIG.font_size]]);
       add_text_node(v_txt, year);
-      txt_attr.forEach(k_v => { v_txt.setAttribute(k_v[0], k_v[1]); });
       header_elt.appendChild(v_txt);  add_text_node(header_elt, '\n');
 
       TIMELINE_DATA.v_bars.add(year);
@@ -922,7 +931,8 @@ function update_v_bars() {
   }
 
   // 横罫線の右端の座標を再設定する (それ以外は常に変化なし)。
-  document.getElementById('h_rule').setAttribute('x2', TIMELINE_DATA.svg_width);
+  set_attributes(document.getElementById('h_rule'), 
+    [['x2', TIMELINE_DATA.svg_width]]);
 }
 
 /* 目盛用の縦線と、それに対応する年のテキスト要素と、最上段の横罫線とを、すべて
@@ -1032,20 +1042,20 @@ function re_color() {
 
   // 期間を表す矩形。
   const rect = document.getElementById(pid);
-  rect.setAttribute('fill', 'url(#' + new_color_theme + grad_str + ')');
+  set_attributes(rect, [['fill', 'url(#' + new_color_theme + grad_str + ')']]);
   // 期間に対するラベル。
   const label_txt = document.getElementById(pid + '_label');
-  label_txt.setAttribute('class', 'label ' + new_color_theme);
+  set_attributes(label_txt, [['class', 'label ' + new_color_theme]]);
   // 開始年と終了年のテキスト (もしあれば)。
   // grad_str と、start_year_txt の存否と、end_year_txt の存否との間の
   // 整合性のチェックは、今はしていない (本当はした方がよい)。
   const start_year_txt = document.getElementById(pid + '_start_year');
   if (start_year_txt !== null) {
-    start_year_txt.setAttribute('class', 'year ' + new_color_theme);
+    set_attributes(start_year_txt, [['class', 'year ' + new_color_theme]]);
   }
   const end_year_txt = document.getElementById(pid + '_end_year');
   if (end_year_txt !== null) {
-    end_year_txt.setAttribute('class', 'year ' + new_color_theme);
+    set_attributes(end_year_txt, [['class', 'year ' + new_color_theme]]);
   }
   // この期間に関連づけられた出来事を表す円があれば、その配色も変更する。
   for (let cur_elt = document.getElementById(pid + 'g').firstChild;
@@ -1054,7 +1064,7 @@ function re_color() {
       for (let cur_ev_elt = cur_elt.firstChild;
            cur_ev_elt !== null; cur_ev_elt = cur_ev_elt.nextSibling) {
         if (cur_ev_elt.nodeName == 'circle') {
-          cur_ev_elt.setAttribute('class', new_color_theme);
+          set_attributes(cur_ev_elt, [['class', new_color_theme]]);
         }
       }
     }
@@ -1143,9 +1153,10 @@ function re_define_period() {
     gradient_def_name = p_dat.base_color_theme + '_' + typ.gradient_type;
 
   // 矩形、ラベルのテキスト、管理用データを更新する。
-  [['x', new_x], ['width', new_w], ['fill', 'url(#' + gradient_def_name + ')']]
-    .forEach(k_v => { rect.setAttribute(k_v[0], k_v[1]); });
-  document.getElementById(pid + '_label').setAttribute('x', new_x);
+  set_attributes(rect,
+    [['x', new_x], ['width', new_w], 
+     ['fill', 'url(#' + gradient_def_name + ')']]);
+  set_attributes(document.getElementById(pid + '_label'), [['x', new_x]]);
   p_dat.start_year = new_start_year;
   p_dat.end_year = new_end_year;
   p_dat.color_theme = gradient_def_name;
@@ -1159,17 +1170,18 @@ function re_define_period() {
   } else { // 開始年のテキストを付ける。
     if (start_txt === null) { // 既存のテキスト要素がなければ作る。
       start_txt = document.createElementNS(SVG_NS, 'text');
-      [['id', pid + '_start_year'], ['class', 'year ' + p_dat.base_color_theme],
-       ['y', row_num_to_year_txt_y(p_dat.row)],
-       ['dx', 0], ['dy', CONFIG.font_size]]
-        .forEach(k_v => { start_txt.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(start_txt,
+        [['id', pid + '_start_year'], 
+         ['class', 'year ' + p_dat.base_color_theme],
+         ['y', row_num_to_year_txt_y(p_dat.row)],
+         ['dx', 0], ['dy', CONFIG.font_size]]);
       g.appendChild(start_txt);  add_text_node(g, '\n');
     } else { // 既存のテキストが存在している。
       remove_all_children(start_txt); // 現在の文字列を削除
     }
     // 以下の 3 行は、既存のテキストの有無によらない共通の処理。
-    start_txt.setAttribute('x', new_x);
-    start_txt.setAttribute('textLength', year_txt_len(new_start_year));
+    set_attributes(start_txt, 
+      [['x', new_x], ['textLength', year_txt_len(new_start_year)]]);
     add_text_node(start_txt, new_start_year);
   }
 
@@ -1180,17 +1192,18 @@ function re_define_period() {
   } else {
     if (end_txt === null) {
       end_txt = document.createElementNS(SVG_NS, 'text');
-      [['id', pid + '_end_year'], ['class', 'year ' + p_dat.base_color_theme],
-       ['y', row_num_to_year_txt_y(p_dat.row)],
-       ['dx', 0], ['dy', CONFIG.font_size]]
-        .forEach(k_v => { end_txt.setAttribute(k_v[0], k_v[1]); });
+      set_attributes(end_txt,
+        [['id', pid + '_end_year'], ['class', 'year ' + p_dat.base_color_theme],
+         ['y', row_num_to_year_txt_y(p_dat.row)],
+         ['dx', 0], ['dy', CONFIG.font_size]]);
       g.appendChild(end_txt);  add_text_node(g, '\n');
     } else {
       remove_all_children(end_txt);
     }
     const end_txt_len = year_txt_len(new_end_year);
-    end_txt.setAttribute('x', new_x + new_w - end_txt_len);
-    end_txt.setAttribute('textLength', end_txt_len);
+    set_attributes(end_txt,
+      [['x', new_x + new_w - end_txt_len],
+       ['textLength', end_txt_len]]);
     add_text_node(end_txt, new_end_year);
   }
 
@@ -1198,8 +1211,8 @@ function re_define_period() {
   // (微妙に座標がずれていると見づらいので)。
   if ((new_start_year === new_end_year) && 
       (! typ.left_end_open) && (! typ.right_end_open)) {
-    document.getElementById(pid + '_start_year').setAttribute('x',
-      document.getElementById(pid + '_end_year').getAttribute('x'));
+    set_attributes(document.getElementById(pid + '_start_year'),
+      [['x', document.getElementById(pid + '_end_year').getAttribute('x')]]);
   }
 }
 
@@ -1292,7 +1305,7 @@ function move_period_and_associated_events(pid, dx, dy) {
   // 開始年・終了年・ラベルを表す text 要素と、期間を表す rect 要素を
   // y 方向において y_diff だけ移動させる。
   const targets = [pid, pid + '_start_year', pid + '_end_year', pid + '_label'];
-  targets.forEach(elt_id => { move_svg_elt(elt_id, dx, dy); });
+  targets.forEach(elt_id => { move_rect_or_text(elt_id, dx, dy); });
 
   // この期間に関連づけられた出来事が、0 個以上の任意の個数、存在しうる。
   
@@ -1304,7 +1317,7 @@ function move_period_and_associated_events(pid, dx, dy) {
       for (let cur_ev_elt = cur_elt.firstChild;
            cur_ev_elt !== null; cur_ev_elt = cur_ev_elt.nextSibling) {
         if (cur_ev_elt.nodeName == 'circle') {
-          move_svg_elt(cur_ev_elt.id, dx, dy, true); break;
+          move_circle(cur_ev_elt.id, dx, dy); break;
         }
         // 改行文字コードの文字要素または title 要素は、無視する。
       }
@@ -1485,18 +1498,18 @@ function add_event() {
 なしに出来事を描画したい場合があるので、別の関数に分けた。 */
 function add_event_0(new_eid, pid, p_dat, event_year, event_label) {
   const g = document.createElementNS(SVG_NS, 'g');
-  g.setAttribute('id', new_eid + 'g');
+  set_attributes(g, [['id', new_eid + 'g']]);
 
   const e_title = document.createElementNS(SVG_NS, 'title');
-  e_title.setAttribute('id', new_eid + '_label');
+  set_attributes(e_title, [['id', new_eid + '_label']]);
   add_text_node(e_title, event_label + ' (' + event_year + ')');
   g.appendChild(e_title);  add_text_node(g, '\n');
 
   const e_circle = document.createElementNS(SVG_NS, 'circle'),
-    cx = year_to_x(event_year + 0.5), cy = row_num_to_cy(p_dat.row),
-    circle_attr = [['id', new_eid],  ['class', p_dat.base_color_theme],
-                   ['cx', cx], ['cy', cy], ['r', CONFIG.circle_radius]];
-  circle_attr.forEach(k_v => { e_circle.setAttribute(k_v[0], k_v[1]); });
+    cx = year_to_x(event_year + 0.5), cy = row_num_to_cy(p_dat.row);
+  set_attributes(e_circle,
+    [['id', new_eid],  ['class', p_dat.base_color_theme],
+     ['cx', cx], ['cy', cy], ['r', CONFIG.circle_radius]]);
   g.appendChild(e_circle);  add_text_node(g, '\n');
 
   const period_g = document.getElementById(pid + 'g');
@@ -1582,7 +1595,6 @@ function add_arrow() {
   add_text_node(g, '\n');  g.appendChild(rect);  //add_text_node(g, '\n');
   add_text_node(g, '\n');  g.appendChild(text);  add_text_node(g, '\n');
 
-  //g.setAttribute('id', new_aid + '_g');
   g.id = new_aid + '_g';
   title.id = new_aid + '_label';
   add_text_node(title, '(' + arrowed_year + ')');
@@ -1598,12 +1610,11 @@ function add_arrow() {
             ' l 0,' + (y_end - y_start).toString(),
     stroke_color = ARROW_COLORS.find(dat => {
       return(dat.id === arrow_color); }).arrow_color;
-  [['id', new_aid], ['class', 'arrow'], ['marker-end', marker_url],
-   ['d', d_str], ['stroke', stroke_color]].forEach((k_v) => { 
-    path.setAttribute(k_v[0], k_v[1]);
-  });
+  set_attributes(path,
+    [['id', new_aid], ['class', 'arrow'], ['marker-end', marker_url],
+     ['d', d_str], ['stroke', stroke_color]]);
   if (arrow_shape === 'double_headed') {
-    path.setAttribute('marker-start', marker_url);
+    set_attributes(path, [['marker-start', marker_url]]);
   }
 
   const y_label_top = Math.round((y_start + y_end) / 2 - CONFIG.font_size / 2),
@@ -1615,17 +1626,15 @@ function add_arrow() {
   console.log('y_label_top: ' + y_label_top);
   console.log('label_width: ' + label_width);
 */
-  [['id', new_aid + '_r'], ['class', 'arrow'],
-   ['x', x_label_left], ['y', y_label_top],
-   ['width', label_width], ['height', CONFIG.font_size]].forEach((k_v) => {
-    rect.setAttribute(k_v[0], k_v[1]);
-  });
-  [['id', new_aid + '_t'], ['class', 'arrow'],
-   ['x', x_label_left], ['y', y_label_top],
-   ['dx', 0], ['dy', CONFIG.font_size],
-   ['textLength', label_width]].forEach((k_v) => {
-    text.setAttribute(k_v[0], k_v[1]);
-  });
+  set_attributes(rect,
+    [['id', new_aid + '_r'], ['class', 'arrow'],
+     ['x', x_label_left], ['y', y_label_top],
+     ['width', label_width], ['height', CONFIG.font_size]]);
+  set_attributes(text,
+    [['id', new_aid + '_t'], ['class', 'arrow'],
+     ['x', x_label_left], ['y', y_label_top],
+     ['dx', 0], ['dy', CONFIG.font_size],
+     ['textLength', label_width]]);
   add_text_node(text, arrow_label);
 
   const a_dat = new arrow_data(start_point_of_arrow, end_point_of_arrow, arrowed_year, x_center, y_start, y_end);
@@ -1654,9 +1663,9 @@ function redraw_arrow(aid) {
 
   if (start_period_dat.row === end_period_dat.row) {
     const y = row_num_to_rect_y(start_period_dat.row);
-    path.setAttribute('d', 'M ' + g.dataset.x_center + ',' + y);
-    rect.setAttribute('y', y);
-    text.setAttribute('y', y);
+    set_attributes(path, [['d', 'M ' + g.dataset.x_center + ',' + y]]);
+    set_attributes(rect, [['y', y]]);
+    set_attributes(text, [['y', y]]);
     g.dataset.y_start = y;
     g.dataset.y_end = y;
     dat.y_start = y;
@@ -1671,10 +1680,10 @@ function redraw_arrow(aid) {
     y_start = y_vals.y_start, y_end = y_vals.y_end,
     d_str = 'M ' + g.dataset.x_center + ',' + y_start + 
             ' l 0,' + (y_end - y_start).toString();
-  path.setAttribute('d', d_str);
+  set_attributes(path, [['d', d_str]]);
   const y_label_top = Math.round((y_start + y_end) / 2 - CONFIG.font_size / 2);
-  rect.setAttribute('y', y_label_top);
-  text.setAttribute('y', y_label_top);
+  set_attributes(rect, [['y', y_label_top]]);
+  set_attributes(text, [['y', y_label_top]]);
   g.dataset.y_start = y_start;
   g.dataset.y_end = y_end;
   dat.y_start = y_start;
@@ -1709,20 +1718,17 @@ function apply_changed_arrow_label_pos() {
   const aid = selected_choice(document.menu.label_positioning_target),
     p = parseInt(document.menu.label_pos_slider.value),
     g = document.getElementById(aid + '_g'),
-    y_start = parseInt(g.dataset.y_start),
-    y_end = parseInt(g.dataset.y_end),
-    y_min = Math.min(y_start, y_end),
-    y_max = Math.max(y_start, y_end),
+    y_start = parseInt(g.dataset.y_start), y_end = parseInt(g.dataset.y_end),
+    y_min = Math.min(y_start, y_end), y_max = Math.max(y_start, y_end),
     new_y = parseInt(y_min + (y_max - y_min) * p / 100)
             - Math.round(CONFIG.font_size / 2);
-  document.getElementById(aid + '_t').setAttribute('y', new_y);
-  document.getElementById(aid + '_r').setAttribute('y', new_y);
+  set_attributes(document.getElementById(aid + '_t'), [['y', new_y]]);
+  set_attributes(document.getElementById(aid + '_r'), [['y', new_y]]);
 }
 
 /* 「矢印を削除」メニュー。 */
 function remove_arrow() {
-  const aid = selected_choice(document.menu.arrow_to_remove);
-  remove_arrow_0(aid);
+  remove_arrow_0(selected_choice(document.menu.arrow_to_remove));
 }
 function remove_arrow_0(aid) {
   const g = document.getElementById(aid + '_g');
@@ -1996,46 +2002,52 @@ function set_read_values() {
     // linearGradient 要素が存在しない場合にのみ実行される。
     grad = document.createElementNS(SVG_NS, 'linearGradient');
     //console.log('grad_id=' + grad_id);
-    grad.setAttribute('id', grad_id);
+    grad.id = grad_id;
     add_text_node(grad, '\n');
     // 左側
     // 左端 (左端から 0% の場所) の stop 要素
     const stop_0 = document.createElementNS(SVG_NS, 'stop');
-    stop_0.setAttribute('offset', '0%');
+    set_attributes(stop_0, [['offset', '0%']]);
     if (left_open) {
-      stop_0.setAttribute('stop-opacity', color_theme.bar_fading_end_opacity);
-      stop_0.setAttribute('stop-color', color_theme.bar_color);
+      set_attributes(stop_0,
+        [['stop-opacity', color_theme.bar_fading_end_opacity],
+         ['stop-color', color_theme.bar_color]]);
       grad.appendChild(stop_0);  add_text_node(grad, '\n');
       // 左端からのグラデーションの部分と、それより中心側のべた塗りの部分との
       // 境界に当たる stop 要素
       const stop_L = document.createElementNS(SVG_NS, 'stop');
-      stop_L.setAttribute('offset', stop_L_offset_str);
-      stop_L.setAttribute('stop-opacity', color_theme.bar_body_opacity);
-      stop_L.setAttribute('stop-color', color_theme.bar_color);
+      set_attributes(stop_L,
+        [['offset', stop_L_offset_str],
+         ['stop-opacity', color_theme.bar_body_opacity],
+         ['stop-color', color_theme.bar_color]]);
       grad.appendChild(stop_L);  add_text_node(grad, '\n');
     } else {
-      stop_0.setAttribute('stop-opacity', color_theme.bar_body_opacity);
-      stop_0.setAttribute('stop-color', color_theme.bar_color);
+      set_attributes(stop_0,
+        [['stop-opacity', color_theme.bar_body_opacity],
+         ['stop-color', color_theme.bar_color]]);
       grad.appendChild(stop_0);  add_text_node(grad, '\n');
     }
     // 右側
     // 右端 (左端から 100% の場所) の stop 要素
     const stop_100 = document.createElementNS(SVG_NS, 'stop');
-    stop_100.setAttribute('offset', '100%');
+    set_attributes(stop_100 [['offset', '100%']]);
     if (right_open) {
       // 右端からのグラデーションの部分と、それより中心側のべた塗りの部分との
       // 境界に当たる stop 要素
       const stop_R = document.createElementNS(SVG_NS, 'stop');
-      stop_R.setAttribute('offset', stop_R_offset_str);
-      stop_R.setAttribute('stop-opacity', color_theme.bar_body_opacity);
-      stop_R.setAttribute('stop-color', color_theme.bar_color);
+      set_attributes(stop_R,
+        [['offset', stop_R_offset_str],
+         ['stop-opacity', color_theme.bar_body_opacity],
+         ['stop-color', color_theme.bar_color]]);
       grad.appendChild(stop_R);  add_text_node(grad, '\n');
-      stop_100.setAttribute('stop-opacity', color_theme.bar_fading_end_opacity);
-      stop_100.setAttribute('stop-color', color_theme.bar_color);
+      set_attributes(stop_100,
+        [['stop-opacity', color_theme.bar_fading_end_opacity],
+         ['stop-color', color_theme.bar_color]]);
       grad.appendChild(stop_100);  add_text_node(grad, '\n');
     } else {
-      stop_100.setAttribute('stop-opacity', color_theme.bar_body_opacity);
-      stop_100.setAttribute('stop-color', color_theme.bar_color);
+      set_attributes(stop_100,
+        [['stop-opacity', color_theme.bar_body_opacity],
+         ['stop-color', color_theme.bar_color]]);
       grad.appendChild(stop_100);  add_text_node(grad, '\n');
     }
     add_text_node(defs_elt, '\n');

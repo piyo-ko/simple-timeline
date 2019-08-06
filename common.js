@@ -86,3 +86,8 @@ function add_text_node(elt, t) { elt.appendChild(document.createTextNode(t)); }
 function remove_all_children(elt) {
   while (elt.firstChild) { elt.removeChild(elt.firstChild); }
 }
+
+/* [key, val] の対を要素とする配列 key_val_arr に基づき、DOM 要素 elt に属性を設定する */
+function set_attributes(elt, key_val_arr) {
+  key_val_arr.forEach(k_v => { elt.setAttribute(k_v[0], k_v[1]); });
+}
