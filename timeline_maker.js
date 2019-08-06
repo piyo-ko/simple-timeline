@@ -583,13 +583,13 @@ function add_period() {
     which_row = parseInt(selected_choice(m.which_row)),
     color_theme = selected_choice(m.color_theme);
 
-  m.period_label.value = m.start_year.value = m.end_year.value = '';
-
   if (! check_year_range(start_year, end_year)) { return; }
   if (period_label === '') {
     const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
     alert(msg[LANG]);  return;
   }
+
+  m.period_label.value = m.start_year.value = m.end_year.value = '';
   add_period_0(new_pid, start_year, start_year_type, end_year, end_year_type, 
     period_label, which_row, color_theme);
 }
@@ -1472,8 +1472,6 @@ function add_event() {
     event_year = parseInt(m.event_year.value),
     event_label = m.event_label.value;
 
-  m.event_year.value = m.event_label.value = '';
-
   if (p_dat === undefined) {
     alert('Unexpected error: add_event()');  return;
   }
@@ -1491,6 +1489,8 @@ function add_event() {
     const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
     alert(msg[LANG]);  return;
   }
+
+  m.event_year.value = m.event_label.value = '';
   add_event_0(new_eid, pid, p_dat, event_year, event_label);
 }
 
@@ -1545,7 +1545,6 @@ function add_arrow() {
     arrow_color = selected_choice(m.arrow_color),
     arrowed_year = parseInt(m.arrowed_year.value);
 
-  m.arrow_label.value = m.arrowed_year.value = '';
   if (arrow_label === '') {
     const msg = {ja: 'ラベルを入力してください', en: 'Enter a label.'};
     alert(msg[LANG]);  return;
@@ -1579,6 +1578,8 @@ function add_arrow() {
                  en: 'The specified year is out of the range of the period at the end point of the arrow.'};
     alert(msg[LANG]);  return;
   }
+
+  m.arrow_label.value = m.arrowed_year.value = '';
 
   const arrow_container_elt = document.getElementById('arrow_container'),
     g = document.createElementNS(SVG_NS, 'g'),
