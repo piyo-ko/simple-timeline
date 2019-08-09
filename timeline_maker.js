@@ -859,14 +859,25 @@ function update_v_bars() {
 
   // 幅の変更にともなって不要となった目盛線と、それに対応する年のテキスト
   // 要素を、すべて削除する。
+  // 年表全体の幅が極端に狭いと、min_y == max_y ないし max_y < min_y と
+  // なる場合があることに注意。
+  // ex. 全体が 23〜26 年のとき、min_y == max_y == 25
+  //     全体が 6〜8 年のとき、min_y == 25, max_y = 0
   TIMELINE_DATA.v_bars.forEach(y => {
-    if (y < min_y || max_y < y) { 
-      TIMELINE_DATA.v_bars.delete(y);
-      header_elt.removeChild(document.getElementById('v_bar_' + y));
+    if (y == 1) { // 紀元前・紀元後の境界
+      if (draw_BCE_CE_boundary) { return; } 
+    } else { // 普通の目盛り線
+      if (min_y == y && max_y == y) { return; }
+      if (min_y < max_y && min_y <= y && y <= max_y) { return; }
+    }
+    // ここにくるのは y 年 (の開始時点) の目盛線を削除すべき場合のみ。
+    TIMELINE_DATA.v_bars.delete(y);
+    header_elt.removeChild(document.getElementById('v_bar_' + y));
+    if (y != 1) { // 紀元前・紀元後の境界にはテキスト要素なし
       header_elt.removeChild(document.getElementById('v_bar_txt_' + y));
-      if (MODE.f_update_v_bars > 0) {
-        console.log('Elements for year ' + y + ' have been removed.');
-      }
+    }
+    if (MODE.f_update_v_bars > 0) {
+      console.log('Elements for year ' + y + ' have been removed.');
     }
   });
 
@@ -964,8 +975,21 @@ function put_min_year_forward(new_start_year) {
 
 /* put_min_year_backwards と put_min_year_forward の共通部分。 */
 function change_min_year(new_start_year) {
-  const diff_year = TIMELINE_DATA.min_year - new_start_year,
-    diff_x = diff_year * CONFIG.year_to_px_factor;
+  let diff_year = TIMELINE_DATA.min_year - new_start_year,
+      adjust;
+  if ((TIMELINE_DATA.min_year < 0 && new_start_year < 0) ||
+      (0 < TIMELINE_DATA.min_year && 0 < new_start_year)) {
+    adjust = 0;
+  } else if (TIMELINE_DATA.min_year < 0 && 0 < new_start_year) {
+    adjust = 1;
+  } else if (new_start_year < 0 && 0 < TIMELINE_DATA.min_year) {
+    adjust = - 1;
+  } else {
+    alert('Unexpected error in change_min_year()');
+    return;
+  }
+  diff_year += adjust;
+  const diff_x = diff_year * CONFIG.year_to_px_factor;
   TIMELINE_DATA.svg_width += diff_x;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.min_year = new_start_year;
@@ -998,7 +1022,20 @@ function put_max_year_backwards(new_end_year) {
 
 /* put_max_year_forward と put_max_year_backwards の共通部分。 */
 function change_max_year(new_end_year) {
-  const diff_year = new_end_year - TIMELINE_DATA.max_year;
+  let diff_year = new_end_year - TIMELINE_DATA.max_year, 
+      adjust;
+  if ((TIMELINE_DATA.max_year < 0 && new_end_year < 0) ||
+      (0 < TIMELINE_DATA.max_year && 0 < new_end_year)) {
+    adjust = 0;
+  } else if (TIMELINE_DATA.max_year < 0 && 0 < new_end_year) {
+    adjust = -1;
+  } else if (new_end_year < 0 && 0 < TIMELINE_DATA.max_year) {
+    adjust = 1;
+  } else {
+    alert('Unexpected error in change_max_year()');
+    return;
+  }
+  diff_year += adjust;
   TIMELINE_DATA.svg_width += diff_year * CONFIG.year_to_px_factor;
   resize_svg(TIMELINE_DATA.svg_width, TIMELINE_DATA.svg_height);
   TIMELINE_DATA.max_year = new_end_year;
@@ -1133,11 +1170,52 @@ function re_define_period() {
   }
 
   if (new_start_year < TIMELINE_DATA.min_year) {
+    // この期間の開始年を繰り上げたことで年表全体で最も早い年がさらに早まる場合
     put_min_year_backwards(new_start_year);
+  } else {
+    // (a) この期間の開始年が今まで年表全体で最も早い年であり、かつ、
+    // (b) 他にはその年から始まる期間が存在せず、かつ、
+    // (c) この期間の開始年を今より遅くする場合、
+    // 年表全体で最も早い年が繰り下がる (今より遅くなる)。具体的には、
+    // この期間の新たな開始年と、他のすべての期間の開始年のうちで、一番早い年まで
+    // 繰り下がる。
+    const cur_start_year = TIMELINE_DATA.periods.get(pid).start_year;
+    if (cur_start_year == TIMELINE_DATA.min_year) { // (a)
+      let n = 0, total_min = CONFIG.max_allowable_year;
+      TIMELINE_DATA.periods.forEach((dat, tmp_pid, m) => {
+        if (tmp_pid == pid) { return; }
+        if (dat.start_year == TIMELINE_DATA.min_year) { n++; }
+        if (dat.start_year < total_min) { total_min = dat.start_year; }
+      });
+      if (n == 0 && TIMELINE_DATA.min_year < new_start_year) { // (b) & (c)
+        put_min_year_forward(Math.min(new_start_year, total_min));
+      }
+    }
   }
   if (TIMELINE_DATA.max_year < new_end_year) {
+    // この期間の終了年を繰り下げたことで年表全体で最も遅い年がさらに遅くなる場合
     put_max_year_forward(new_end_year);
+  } else {
+    // (d) この期間の終了年が今まで年表全体で最も遅い年であり、かつ、
+    // (e) 他にはその年で終わる期間が存在せず、かつ、
+    // (f) この期間の終了年を今より早める場合、
+    // 年表全体で最も遅い年が繰り上がる (今より早くなる)。具体的には、
+    // この期間の新たな終了年と、他のすべての期間の終了年のうちで、一番遅い年まで
+    // 繰り上がる。
+    const cur_end_year = TIMELINE_DATA.periods.get(pid).end_year;
+    if (cur_end_year == TIMELINE_DATA.max_year) { // (d)
+      let n = 0, total_max = CONFIG.min_allowable_year;
+      TIMELINE_DATA.periods.forEach((dat, tmp_pid, m) => {
+        if (tmp_pid == pid) { return; }
+        if (dat.end_year == TIMELINE_DATA.max_year) { n++; }
+        if (total_max < dat.end_year) { total_max = dat.end_year; }
+      });
+      if (n == 0 && new_end_year < TIMELINE_DATA.max_year) { // (e) & (f)
+        put_max_year_backwards(Math.max(new_end_year, total_max));
+      }
+    }
   }
+
   update_v_bars();
   svg_elt.dataset.min_year = TIMELINE_DATA.min_year;
   svg_elt.dataset.max_year = TIMELINE_DATA.max_year;
