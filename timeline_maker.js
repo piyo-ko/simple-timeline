@@ -998,6 +998,8 @@ function change_min_year(new_start_year) {
   TIMELINE_DATA.periods.forEach((p_data, pid, m) => {
     move_period_and_associated_events(pid, diff_x, 0);
   });
+
+  redraw_all_arrows(diff_x);
 }
 
 /* 種々の期間の開始年のうちで最も遅い年 (TIMELINE_DATA.max_year) を
@@ -1345,9 +1347,7 @@ function move_period() {
   // 移動対象として指定された期間 (と、その中の出来事) を、上または下に動かす。
   move_period_and_associated_events_up_or_down(pid, (up_or_down === 'upwards'));
 
-  TIMELINE_DATA.arrows.forEach((dat, aid, map) => {
-    redraw_arrow(aid);
-  });
+  redraw_all_arrows(0);
 }
 
 /* 最終行を削除して、年表全体の高さを減らす。配置先の行の選択肢の削除も行う。
@@ -1730,8 +1730,18 @@ function add_arrow() {
   });
 }
 
-/*  */
-function redraw_arrow(aid) {
+/* 矢印の再描画が必要になることがある。
+(1) 矢印の起点もしくは終点のある期間を上下移動した場合
+(2) 期間の追加・削除・範囲変更により年表全体の範囲の変更が生じ、その影響で
+    他の期間のx座標にも変更が生じる場合
+再描画の対象の矢印を調べて個別に再描画してもいいのだが、面倒なので (あと、条件
+設定を間違うバグの混入を防げるので) 全部まとめて再描画する。 */
+function redraw_all_arrows(diff_x) {
+  TIMELINE_DATA.arrows.forEach((dat, aid, map) => {
+    redraw_arrow(aid, diff_x);
+  });
+}
+function redraw_arrow(aid, diff_x) {
   const dat = TIMELINE_DATA.arrows.get(aid),
     g = document.getElementById(aid + '_g'),
     path = document.getElementById(aid),
@@ -1740,6 +1750,10 @@ function redraw_arrow(aid) {
     start_period_dat = TIMELINE_DATA.periods.get(dat.start_period_id),
     end_period_dat = TIMELINE_DATA.periods.get(dat.end_period_id);
 
+  // 一段ずつ上下移動している途中で、たまたま起点・終点の期間が同じ段になる場合が
+  // ある。この場合、矢印の長さを0にしてラベル表示のみとするが、矢印のpath要素は
+  // 消さない (さらにもう一段移動したときに、属性指定のみで矢印を復活できるように
+  // したいので)。
   if (start_period_dat.row === end_period_dat.row) {
     const y = row_num_to_rect_y(start_period_dat.row);
     set_attributes(path, [['d', 'M ' + g.dataset.x_center + ',' + y]]);
@@ -1756,17 +1770,22 @@ function redraw_arrow(aid) {
   // ここに来るのは、矢印の始点側の期間と終点側の期間が別の段にある場合のみ。
   const y_vals = row_nums_to_arrow_y_vals(start_period_dat.row, 
                    end_period_dat.row, path.hasAttribute('marker-start')),
-    y_start = y_vals.y_start, y_end = y_vals.y_end,
-    d_str = 'M ' + g.dataset.x_center + ',' + y_start + 
+    y_start = parseInt(y_vals.y_start), y_end = parseInt(y_vals.y_end),
+    new_x = parseInt(g.dataset.x_center) + diff_x,
+    d_str = 'M ' + new_x + ',' + y_start + 
             ' l 0,' + (y_end - y_start).toString();
   set_attributes(path, [['d', d_str]]);
   const y_label_top = Math.round((y_start + y_end) / 2 - CONFIG.font_size / 2);
   set_attributes(rect, [['y', y_label_top]]);
+  move_rect_or_text(aid + '_r', diff_x, 0);
   set_attributes(text, [['y', y_label_top]]);
+  move_rect_or_text(aid + '_t', diff_x, 0);
   g.dataset.y_start = y_start;
   g.dataset.y_end = y_end;
+  g.dataset.x_center = new_x;
   dat.y_start = y_start;
   dat.y_end = y_end;
+  dat.x_center = new_x;
   TIMELINE_DATA.arrows.set(aid, dat);
 }
 
