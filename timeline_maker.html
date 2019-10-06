@@ -172,6 +172,17 @@
 </tr>
 
 <tr>
+<th>矢印を曲げる</th>
+<td>
+<select name="which_arrow_to_curve" id="which_arrow_to_curve" onchange="set_current_arrow_curve_val()"></select>
+の矢印を曲げる。
+<label>[左
+<input type="range" name="how_curved" id="how_curved" step="1" min="-10" max="10" value="0" oninput="curve_arrow()" />
+右]</label>
+</td>
+</tr>
+
+<tr>
 <th>矢印を<wbr>削除</th>
 <td>
 <select name="arrow_to_remove" id="arrow_to_remove"></select> を

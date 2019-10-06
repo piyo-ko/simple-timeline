@@ -44,8 +44,21 @@ function select_specified_option(sel_elt, val) {
   }
 }
 
-/* プルダウンリストに選択肢を追加して、それを選択済み状態にする。 */
+/* プルダウンリストに選択肢を追加して (ただし指定のものがなければ)、それを選択済み状態にする。 */
 function add_selector_option(sel_elt, id, displayed_name) {
+  // 指定された id を value 属性にもつ既存の選択肢をまず探す。
+  const L = sel_elt.options.length;
+  for (let i = 0; i < L; i++) {
+    if (sel_elt.options[i].value === id) {
+      // 念のため、id 属性と表示名は上書きする。
+      sel_elt.options[i].id = id;
+      sel_elt.options[i].textContent = displayed_name;
+      // この既存の選択肢を選択しておく。
+      sel_elt.selectedIndex = i;
+      return;
+    }
+  }
+  // ここに来るのは、既存の選択肢で合致するものがなかったとき。
   const opt = document.createElement('option');
   add_text_node(opt, displayed_name);  opt.value = id;  opt.id = id;
   sel_elt.appendChild(opt);  sel_elt.selectedIndex = sel_elt.options.length - 1;

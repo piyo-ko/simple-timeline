@@ -206,6 +206,19 @@ the bottom]</label>
 </tr>
 
 <tr>
+<th>Curve an arrow</th>
+<td>
+<label>Select an arrow to curve:
+<select name="which_arrow_to_curve" id="which_arrow_to_curve" onchange="set_current_arrow_curve_val()"></select>.
+</label>
+Then specify how to curve the selected arrow.
+<label>[leftwards
+<input type="range" name="how_curved" id="how_curved" step="1" min="-10" max="10" value="0" oninput="curve_arrow()" />
+rightwards]</label>
+</td>
+</tr>
+
+<tr>
 <th>Remove an arrow</th>
 <td>
 Select an arrow:

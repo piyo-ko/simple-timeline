@@ -109,7 +109,7 @@ const CONFIG = {
   year_to_px_factor: 20,
   //
   arrow_width: 2,
-  arrow_head_protrusion: 6
+  arrow_curve_unitlen: 12
 };
 
 /* ページのロード (リロードも含む) の際に行う初期化。 */
@@ -132,8 +132,8 @@ window.top.onload = function () {
    m.start_point_of_arrow, m.end_point_of_arrow]
    .forEach(sel => { PERIOD_SELECTORS.add(sel); });
   EVENT_SELECTORS.add(m.event_to_remove);
-  ARROW_SELECTORS.add(m.label_positioning_target);
-  ARROW_SELECTORS.add(m.arrow_to_remove);
+  [m.label_positioning_target, m.which_arrow_to_curve, m.arrow_to_remove]
+  .forEach(sel => { ARROW_SELECTORS.add(sel); });
 
   reset_svg();
   return(true);
@@ -296,19 +296,6 @@ function row_nums_to_arrow_y_vals(start_row, end_row, is_double_headed) {
   const half_h = Math.round(CONFIG.bar_height / 2);
   let y_start = row_num_to_rect_y(start_row) + half_h, 
       y_end = row_num_to_rect_y(end_row) + half_h;
-  if (is_double_headed) { // 両向き矢印
-    if (start_row < end_row) {
-      y_start += CONFIG.arrow_head_protrusion;  // 上にある
-      y_end -= CONFIG.arrow_head_protrusion;    // 下にある
-    } else {
-      y_start -= CONFIG.arrow_head_protrusion;  // 下にある
-      y_end += CONFIG.arrow_head_protrusion;    // 上にある
-    }
-  } else if (start_row < end_row) { // 上から下への矢印
-    y_end -= CONFIG.arrow_head_protrusion;  // 下にある
-  } else { // 下から上への矢印
-    y_end += CONFIG.arrow_head_protrusion;  // 上にある
-  }
   return({ y_start: y_start, y_end: y_end });
 }
 
@@ -466,18 +453,25 @@ function set_arrow_color_defs() {
     alert('Error in themes.js.\nPlease correct themes.js.');  return(false);
   }
 
-  remove_all_children(document.menu.arrow_color);
+  const sel = document.menu.arrow_color;
+  remove_all_children(sel);
 
   const defs_elt = document.getElementById('arrow_def');
   ARROW_COLORS.forEach(ac => {
-    // 既存なら何もしない
-    if (document.getElementById(ac.id + '_arrow_head')) { return; }
-
+    const marker_id = ac.id + '_arrow_head';
+    if (document.getElementById(marker_id)) {
+      // svg 要素には矢印の定義が既にあるので、セレクタへの要素追加のみ行えばよい。
+      add_selector_option(sel, ac.id, ac.name[LANG]);
+      return;
+    }
+    // 新たな矢印の色 (対応する marker が svg 要素内に定義されていない色) が
+    // themes.js に定義されている場合にのみ、ここに来るはず (ユーザの手作業とか
+    // themes.js からの色の削除とかはとりあえず考慮していないので雑な判定だが)。
     const marker = document.createElementNS(SVG_NS, 'marker');
     set_attributes(marker,
-      [['id', ac.id + '_arrow_head'],  ['markerUnits', 'strokeWidth'],
+      [['id', marker_id],  ['markerUnits', 'strokeWidth'],
        ['markerWidth', 4], ['markerHeight', 4],
-       ['viewBox', '0 0 8 8'], ['refX', 4], ['refY', 4],
+       ['viewBox', '0 0 8 8'], ['refX', 6], ['refY', 4],
        ['orient', 'auto-start-reverse']]);
     add_text_node(defs_elt, '\n');
     defs_elt.appendChild(marker);
@@ -490,7 +484,7 @@ function set_arrow_color_defs() {
     marker.appendChild(polygon);
     add_text_node(marker, '\n');
 
-    add_selector_option(document.menu.arrow_color, ac.id, ac.name[LANG]);
+    add_selector_option(sel, ac.id, ac.name[LANG]);
   });
 }
 
@@ -1728,6 +1722,8 @@ function add_arrow() {
   ARROW_SELECTORS.forEach(sel => {
     add_selector_option(sel, new_aid, '[' + arrowed_year + '] ' + arrow_label);
   });
+  m.label_pos_slider.value = 50;
+  m.how_curved.value = 0;
 }
 
 /* 矢印の再描画が必要になることがある。
@@ -1771,15 +1767,38 @@ function redraw_arrow(aid, diff_x) {
   const y_vals = row_nums_to_arrow_y_vals(start_period_dat.row, 
                    end_period_dat.row, path.hasAttribute('marker-start')),
     y_start = parseInt(y_vals.y_start), y_end = parseInt(y_vals.y_end),
-    new_x = parseInt(g.dataset.x_center) + diff_x,
-    d_str = 'M ' + new_x + ',' + y_start + 
-            ' l 0,' + (y_end - y_start).toString();
+    new_x = parseInt(g.dataset.x_center) + diff_x;
+  let dy = y_end - y_start, downward = (0 < dy),
+    label_width = text.textContent.length * CONFIG.font_size,
+    x_label_left,
+    d_str = 'M ' + new_x + ',' + y_start,
+    how_curved = path.dataset.how_curved;
+  if (how_curved) {
+    how_curved = parseInt(how_curved);
+  } else {
+    how_curved = 0;
+  }
+  if (how_curved == 0) { // 直線
+    d_str += 'l 0,' + dy;
+    x_label_left = new_x - Math.round(label_width / 2);
+  } else { // 曲線
+    // a rx ry angle large-arc-flag sweep-flag dx dy
+    const rx = Math.abs(how_curved) * CONFIG.arrow_curve_unitlen,
+      ry = dy / 2,
+      sweep_flag = downward ? 
+                   (how_curved < 0 ? 0 : 1) : (how_curved < 0 ? 1 : 0),
+      dx = 0;
+    d_str += 'a ' + rx + ' ' + ry + ' ' + '0 0 ' 
+             + sweep_flag + ' ' + dx + ' ' + dy;
+    x_label_left = new_x + how_curved * CONFIG.arrow_curve_unitlen
+                   - Math.round(label_width / 2);
+  }
+
   set_attributes(path, [['d', d_str]]);
+  path.dataset.how_curved = how_curved;
   const y_label_top = Math.round((y_start + y_end) / 2 - CONFIG.font_size / 2);
-  set_attributes(rect, [['y', y_label_top]]);
-  move_rect_or_text(aid + '_r', diff_x, 0);
-  set_attributes(text, [['y', y_label_top]]);
-  move_rect_or_text(aid + '_t', diff_x, 0);
+  set_attributes(rect, [['x', x_label_left], ['y', y_label_top]]);
+  set_attributes(text, [['x', x_label_left], ['y', y_label_top]]);
   g.dataset.y_start = y_start;
   g.dataset.y_end = y_end;
   g.dataset.x_center = new_x;
@@ -1822,6 +1841,27 @@ function apply_changed_arrow_label_pos() {
             - Math.round(CONFIG.font_size / 2);
   set_attributes(document.getElementById(aid + '_t'), [['y', new_y]]);
   set_attributes(document.getElementById(aid + '_r'), [['y', new_y]]);
+}
+
+/* 「矢印を曲げる」メニュー用。矢印が選択されると実行される。 */
+function set_current_arrow_curve_val() {
+  const aid = selected_choice(document.menu.which_arrow_to_curve);
+  let how_curved = document.getElementById(aid).dataset.how_curved;
+  if (how_curved) {
+    how_curved = parseInt(how_curved);
+  } else {
+    how_curved = 0;
+    document.getElementById(aid).dataset.how_curved = 0;
+  }
+  document.menu.how_curved.value = how_curved;
+}
+
+/* 「矢印を曲げる」メニュー用。 */
+function curve_arrow() {
+  const aid = selected_choice(document.menu.which_arrow_to_curve),
+    how_curved = parseInt(document.menu.how_curved.value);
+  document.getElementById(aid).dataset.how_curved = how_curved;
+  redraw_arrow(aid, 0);
 }
 
 /* 「矢印を削除」メニュー。 */
@@ -2021,11 +2061,11 @@ function set_read_values() {
   TIMELINE_DATA.min_year = min_year;
   TIMELINE_DATA.max_year = max_year;
   set_year_range();
-  const year_span = year_span(min_year, max_year) + CONFIG.h_margin_in_year * 2;
-  if (year_span * CONFIG.year_to_px_factor !== svg_width) {
+  const y_span = year_span(min_year, max_year) + CONFIG.h_margin_in_year * 2;
+  if (y_span * CONFIG.year_to_px_factor !== svg_width) {
     const msg = {ja: '最も早い年から最も遅い年までの長さと幅とが不整合です',
                  en: 'The span between the earliest year and the latest year is inconsistent with the width.'};
-    console.log(`min_year=${min_year}, max_year=${max_year}, year_span=${year_span}, svg_width=${svg_width}`);
+    console.log(`min_year=${min_year}, max_year=${max_year}, y_span=${y_span}, svg_width=${svg_width}`);
     alert(msg[LANG]);  reset_svg();  return;
   }
 
@@ -2309,7 +2349,7 @@ function set_read_values() {
                    en: 'Invalid data for arrow ' + cur_aid};
        alert(msg[LANG]);  reset_svg();  return;
     }
-    const a_dat = new arrow_data(start_period_id, end_period_id, x_center, y_start, y_end);
+    const a_dat = new arrow_data(start_period_id, end_period_id, arrowed_year, x_center, y_start, y_end);
     TIMELINE_DATA.arrows.set(cur_aid, a_dat);
     const label_txt = '[' + arrowed_year + '] ' + cur_text.textContent;
     ARROW_SELECTORS.forEach(sel => {
