@@ -136,6 +136,7 @@ window.top.onload = function () {
   .forEach(sel => { ARROW_SELECTORS.add(sel); });
 
   reset_svg();
+  show_menu('menu_period')
   return(true);
 }
 
@@ -2408,4 +2409,14 @@ function show_color_samples() {
     add_event_0(new_eid, new_pid, TIMELINE_DATA.periods.get(new_pid), 
                 event_year, 'test');
   });
+}
+
+
+/* 関連機能別にグループ化したメニューを用意し、グループを tr 要素の class で
+示している。グループ単位で入力フォームの表示・非表示を切り換える */
+function show_menu(menu_group) {
+  const trs = document.getElementById('menu_table').getElementsByTagName('tr');
+  for (let i = 0; i < trs.length; i++) {
+    trs[i].style.display = (trs[i].className === menu_group) ? 'table-row' : 'none';
+  }
 }

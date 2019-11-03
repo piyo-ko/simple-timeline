@@ -37,10 +37,17 @@
 <ul id="description_items"></ul>
 </div>
 
-<div id="menu_container" class="container">
-<table>
+<div id="menu_tabs">
+<button type="button" class="menutab" onclick="show_menu('menu_period')">Period</button>
+<button type="button" class="menutab" onclick="show_menu('menu_event')">Event</button>
+<button type="button" class="menutab" onclick="show_menu('menu_arrow')">Arrow</button>
+<button type="button" class="menutab" onclick="show_menu('menu_misc')">Misc.</button>
+</div>
 
-<tr>
+<div id="menu_container" class="container">
+<table id="menu_table">
+
+<tr class="menu_period">
 <th>Add a period</th>
 <td>
 <label for="start_year">Start year</label>: 
@@ -71,7 +78,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>Modify the label of a period</th>
 <td>
 Select a period:
@@ -83,7 +90,7 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>Change the color scheme of a period</th>
 <td>
 Select a period:
@@ -95,7 +102,7 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>Modify the range of a period</th>
 <td>
 Select a period:
@@ -118,7 +125,7 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>Move a period vertically</th>
 <td>
 Select a period: 
@@ -131,7 +138,7 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>Remove a period</th>
 <td>
 Select a period: 
@@ -141,7 +148,7 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_event">
 <th>Add an event</th>
 <td>
 Select a period:
@@ -156,7 +163,7 @@ Then <button type="button" onclick="add_event()">add the event</button>.
 </td>
 </tr>
 
-<tr>
+<tr class="menu_event">
 <th>Remove an event</th>
 <td>
 Select an event:
@@ -166,7 +173,7 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>Add an arrow starting from a period and pointing to another</th>
 <td>
 Enter a label for a new arrow:
@@ -193,7 +200,7 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>Move the label of an arrow vertically</th>
 <td>
 Select an arrow:
@@ -205,7 +212,7 @@ the bottom]</label>
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>Curve an arrow</th>
 <td>
 <label>Select an arrow to curve:
@@ -218,7 +225,7 @@ rightwards]</label>
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>Remove an arrow</th>
 <td>
 Select an arrow:
@@ -228,14 +235,14 @@ Then
 </td>
 </tr>
 
-<tr>
+<tr class="menu_misc">
 <th>Download the SVG data</th>
 <td>
 <button type="button" onclick="download_svg()">Download the SVG data of this timeline chart</button>.
 </td>
 </tr>
 
-<tr>
+<tr class="menu_misc">
 <th>Read an SVG file created and saved before</th>
 <td>
 <label for="input_svg_file">Select your SVG file</label>
@@ -244,7 +251,7 @@ and
 <button type="button" onclick="read_in()">display the timeline chart of the file</button>.</td>
 </tr>
 
-<tr>
+<tr class="menu_misc">
 <th>Display samples of the predefined color schemes</th>
 <td><button type="button" onclick="show_color_samples()">Display samples of the predefined color schemes</button>.</td>
 </tr>

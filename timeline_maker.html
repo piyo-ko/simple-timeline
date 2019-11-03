@@ -37,10 +37,17 @@
 <ul id="description_items"></ul>
 </div>
 
-<div id="menu_container" class="container">
-<table>
+<div id="menu_tabs">
+<button type="button" class="menutab" onclick="show_menu('menu_period')">期間</button>
+<button type="button" class="menutab" onclick="show_menu('menu_event')">出来事</button>
+<button type="button" class="menutab" onclick="show_menu('menu_arrow')">矢印</button>
+<button type="button" class="menutab" onclick="show_menu('menu_misc')">その他</button>
+</div>
 
-<tr>
+<div id="menu_container" class="container">
+<table id="menu_table">
+
+<tr class="menu_period">
 <th>期間を<wbr>追加</th>
 <td>
 <label for="start_year">開始年</label>: 
@@ -68,7 +75,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>期間の<wbr>ラベルを<wbr>変更</th>
 <td>
 <select name="period_to_re_label" id="period_to_re_label"></select> のラベルを
@@ -77,7 +84,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>期間の<wbr>配色を<wbr>変更</th>
 <td>
 <select name="period_to_re_color" id="period_to_re_color"></select> の配色を
@@ -86,7 +93,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>期間の<wbr>範囲を<wbr>変更</th>
 <td>
 <select name="period_to_re_define" id="period_to_re_define" onchange="set_present_values()"></select> の
@@ -103,7 +110,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>期間の<wbr>配置を<wbr>変更</th>
 <td>
 <select name="period_to_move" id="period_to_move"></select> を
@@ -113,7 +120,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_period">
 <th>期間を<wbr>削除</th>
 <td>
 <select name="period_to_remove" id="period_to_remove"></select> を
@@ -121,7 +128,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_event">
 <th>出来事を<wbr>追加</th>
 <td>
 時期:
@@ -135,7 +142,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_event">
 <th>出来事を<wbr>削除</th>
 <td>
 <select name="event_to_remove" id="event_to_remove"></select> を
@@ -143,7 +150,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>矢印を<wbr>追加</th>
 <td>
 <input type="text" name="arrow_label" id="arrow_label" size="40" />
@@ -160,7 +167,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>矢印のラベルの<wbr>位置を<wbr>調整</th>
 <td>
 <select name="label_positioning_target" id="label_positioning_target" onchange="set_current_arrow_label_pos()"></select>
@@ -171,7 +178,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>矢印を曲げる</th>
 <td>
 <select name="which_arrow_to_curve" id="which_arrow_to_curve" onchange="set_current_arrow_curve_val()"></select>
@@ -182,7 +189,7 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_arrow">
 <th>矢印を<wbr>削除</th>
 <td>
 <select name="arrow_to_remove" id="arrow_to_remove"></select> を
@@ -190,14 +197,14 @@
 </td>
 </tr>
 
-<tr>
+<tr class="menu_misc">
 <th>ダウンロードする</th>
 <td>
 <button type="button" onclick="download_svg()">SVG 形式で年表をダウンロードする</button>
 </td>
 </tr>
 
-<tr>
+<tr class="menu_misc">
 <th>作成済みの<wbr>データを<wbr>読み込む</th>
 <td>
 <label for="input_svg_file">SVG ファイルを選択して</label>
@@ -206,7 +213,7 @@
 <button type="button" onclick="read_in()">表示する</button>。</td>
 </tr>
 
-<tr>
+<tr class="menu_misc">
 <th>配色見本を<wbr>表示する</th>
 <td><button type="button" onclick="show_color_samples()">配色見本を表示する</button></td>
 </tr>
